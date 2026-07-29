@@ -1,71 +1,284 @@
 const std = @import("std");
-const Io = std.Io;
+const builtin = @import("builtin");
+const dvui = @import("dvui");
 
-const zorts = @import("zorts");
+// To be a dvui App:
+// * declare "dvui_app"
+// * expose the backend's main function
+// * use the backend's log function
+pub const dvui_app: dvui.App = .{
+    .config = .{
+        .options = .{
+            .size = .{ .w = 800.0, .h = 600.0 },
+            .min_size = .{ .w = 250.0, .h = 350.0 },
+            .title = "DVUI App Example",
+            //.icon = window_icon_png,
+            .window_init_options = .{
+                // Could set a default theme here
+                // .theme = dvui.Theme.builtin.dracula,
+            },
+        },
+    },
+    .frameFn = appFrame,
+    .initFn = appInit,
+    .deinitFn = appDeinit,
+};
+pub const main = dvui.App.main;
+pub const panic = dvui.App.panic;
+pub const std_options: std.Options = .{
+    .logFn = dvui.App.logFn,
+};
 
-pub fn main(init: std.process.Init) !void {
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+const gpa = gpa_instance.allocator();
 
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
+var orig_content_scale: f32 = 1.0;
+var warn_on_quit: bool = false;
+var warn_on_quit_closing: bool = false;
+var extra_os_win: bool = false;
 
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
+// Runs before the first frame, after backend and dvui.Window.init()
+// - runs between win.begin()/win.end()
+pub fn appInit(win: *dvui.Window) !void {
+    orig_content_scale = win.content_scale;
+
+    // Add your own bundled font files...:
+    // try dvui.addFont("NOTO", @embedFile("../src/fonts/NotoSansKR-Regular.ttf"), null);
+
+    // If you want a custom theme use something like this:
+    // const theme = switch (win.backend.preferredColorScheme() orelse .light) {
+    //     .light => dvui.Theme.builtin.adwaita_light,
+    //     .dark => dvui.Theme.builtin.adwaita_dark,
+    // };
+    // win.themeSet(theme);
+}
+
+// Run as app is shutting down before dvui.Window.deinit()
+pub fn appDeinit(win: *dvui.Window) void {
+    _ = win;
+}
+
+// Run each frame to do normal UI
+pub fn appFrame() !dvui.App.Result {
+    {
+        // Here's the dvui example content, replace/modify with your stuff
+
+        var scaler = dvui.scale(@src(), .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global }, .{ .rect = .cast(dvui.windowRect()) });
+        scaler.deinit();
+
+        if (menu()) |res| return res;
+
+        var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .style = .window });
+        defer scroll.deinit();
+
+        if (content()) |res| return res;
     }
 
-    // In order to do I/O operations need an `Io` instance.
-    const io = init.io;
+    // only shows the demo if dvui.Examples.show_demo_window is true
+    // .full -> .lite or comment out to speed up compile times
+    dvui.Examples.demo(.full);
 
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
-
-    try zorts.printAnotherMessage(stdout_writer);
-
-    try stdout_writer.flush(); // Don't forget to flush!
+    return .ok;
 }
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+pub fn menu() ?dvui.App.Result {
+    var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{ .style = .window, .background = true, .expand = .horizontal });
+    defer hbox.deinit();
+
+    var m = dvui.menu(@src(), .horizontal, .{});
+    defer m.deinit();
+
+    if (dvui.menuItemLabel(@src(), "File", .{ .submenu = true }, .{ .tag = "first-focusable" })) |r| {
+        var fw = dvui.floatingMenu(@src(), .{ .from = r }, .{});
+        defer fw.deinit();
+
+        if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{ .expand = .horizontal }) != null) {
+            m.close();
+        }
+
+        if (dvui.backend.kind != .web) {
+            if (dvui.menuItemLabel(@src(), "Exit", .{}, .{ .expand = .horizontal }) != null) {
+                return .close;
+            }
+        }
+    }
+
+    return null;
 }
 
-test "fuzz example" {
-    try std.testing.fuzz({}, testOne, .{});
+pub fn content() ?dvui.App.Result {
+    var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font = .theme(.title) });
+    const lorem = "This is a dvui.App example that can compile on multiple backends.\n";
+    tl.addText(lorem, .{});
+    tl.format("Current backend: {s}", .{@tagName(dvui.backend.kind)}, .{});
+    if (dvui.backend.kind == .web) {
+        tl.format(" : {s}", .{if (dvui.backend.wasm.wasm_about_webgl2() == 1) "webgl2" else "webgl (no mipmaps)"}, .{});
+    }
+    tl.deinit();
+
+    var tl2 = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
+    tl2.addText(
+        \\DVUI
+        \\- paints the entire window
+        \\- can show floating windows and dialogs
+        \\- rest of the window is a scroll area
+        \\
+        \\
+    , .{});
+    tl2.addText("Framerate is variable and adjusts as needed for input events and animations.\n\n", .{});
+    tl2.addText("Framerate is capped by vsync.\n\n", .{});
+    tl2.addText("Cursor is always being set by dvui.\n\n", .{});
+    if (dvui.useFreeType) {
+        tl2.addText("Fonts are being rendered by FreeType 2.", .{});
+    } else {
+        tl2.addText("Fonts are being rendered by stb_truetype.", .{});
+    }
+    tl2.deinit();
+
+    const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
+    if (dvui.button(@src(), label, .{}, .{ .tag = "show-demo-btn" })) {
+        dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
+    }
+
+    if (dvui.backend.kind == .sdl3 or dvui.backend.kind == .sdl2) {
+        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
+        defer hbox.deinit();
+
+        dvui.label(@src(), "Window State", .{}, .{ .gravity_y = 0.5 });
+
+        if (dvui.button(@src(), "Fullscreen", .{}, .{})) {
+            dvui.currentWindow().stateSet(.fullscreen);
+        }
+
+        if (dvui.button(@src(), "Maximize", .{}, .{})) {
+            dvui.currentWindow().stateSet(.maximize);
+        }
+
+        if (dvui.button(@src(), "Normal", .{}, .{})) {
+            dvui.currentWindow().stateSet(.normal);
+        }
+    }
+
+    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
+        dvui.toggleDebugWindow();
+    }
+
+    const os_win_label = if (extra_os_win) "Close the Os Window" else "Extra OS Window (experimental)";
+    if (dvui.button(@src(), os_win_label, .{}, .{})) {
+        extra_os_win = !extra_os_win;
+    }
+    if (extra_os_win) {
+        const os_win = dvui.osWindow(
+            @src(),
+            .{ .title = "Child os window (or so I hope)", .size = .{ .w = 500, .h = 300 } },
+            .{ .open_flag = &extra_os_win },
+        );
+        defer os_win.deinit();
+        const b = dvui.box(@src(), .{}, .{ .background = true });
+        defer b.deinit();
+        if (dvui.expander(@src(), "Show me a Spinner !!", .{ .default_expanded = false }, .{})) {
+            dvui.spinner(@src(), .{});
+        }
+        if (dvui.button(@src(), "Close me", .{}, .{})) {
+            extra_os_win = false;
+        }
+    }
+
+    {
+        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
+        defer hbox.deinit();
+        dvui.label(@src(), "Pinch Zoom or Scale", .{}, .{});
+        if (dvui.buttonIcon(@src(), "plus", dvui.entypo.plus, .{}, .{}, .{})) {
+            dvui.currentWindow().content_scale *= 1.1;
+        }
+
+        if (dvui.buttonIcon(@src(), "minus", dvui.entypo.minus, .{}, .{}, .{})) {
+            dvui.currentWindow().content_scale /= 1.1;
+        }
+
+        if (dvui.currentWindow().content_scale != orig_content_scale) {
+            if (dvui.button(@src(), "Reset Scale", .{}, .{})) {
+                dvui.currentWindow().content_scale = orig_content_scale;
+            }
+        }
+    }
+
+    if (dvui.backend.kind != .web) {
+        _ = dvui.checkbox(@src(), &warn_on_quit, "Warn on Quit", .{});
+
+        if (warn_on_quit) {
+            if (warn_on_quit_closing) return .close;
+
+            const wd = dvui.currentWindow().data();
+            for (dvui.events()) |*e| {
+                if (!dvui.eventMatchSimple(e, wd)) continue;
+
+                if ((e.evt == .window and e.evt.window.action == .close) or (e.evt == .app and e.evt.app.action == .quit)) {
+                    e.handle(@src(), wd);
+
+                    const warnAfter: dvui.DialogCallAfterFn = struct {
+                        fn warnAfter(_: dvui.Id, response: dvui.enums.DialogResponse) !void {
+                            if (response == .ok) warn_on_quit_closing = true;
+                        }
+                    }.warnAfter;
+
+                    dvui.dialog(@src(), .{}, .{ .message = "Really Quit?", .cancel_label = "Cancel", .callafterFn = warnAfter });
+                }
+            }
+        }
+    }
+
+    return null;
 }
 
-fn testOne(context: void, smith: *std.testing.Smith) !void {
-    _ = context;
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
+test "tab order" {
+    var t = try dvui.testing.init(.{});
+    defer t.deinit();
 
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(u8) = .empty;
-    defer list.deinit(gpa);
-    while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-        .add_data => {
-            const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-            smith.bytes(slice);
-        },
-        .dup_data => {
-            if (list.items.len == 0) continue;
-            if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
-            try std.testing.expectEqualSlices(
-                u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
-            );
-        },
-    };
+    try dvui.testing.settle(appFrame);
+
+    try dvui.testing.expectNotFocused("first-focusable");
+
+    try dvui.testing.pressKey(.tab, .none);
+    try dvui.testing.settle(appFrame);
+
+    try dvui.testing.expectFocused("first-focusable");
 }
+
+test "open example window" {
+    var t = try dvui.testing.init(.{});
+    defer t.deinit();
+
+    try dvui.testing.settle(appFrame);
+
+    // FIXME: The global show_demo_window variable makes tests order dependent
+    dvui.Examples.show_demo_window = false;
+
+    try std.testing.expect(dvui.tagGet(dvui.Examples.demo_window_tag) == null);
+
+    try dvui.testing.moveTo("show-demo-btn");
+    try dvui.testing.click(.left);
+    try dvui.testing.settle(appFrame);
+
+    try dvui.testing.expectVisible(dvui.Examples.demo_window_tag);
+}
+
+// disabling snapshot tests until we figure out a better (less sensitive) way of doing them
+//test "snapshot" {
+//    // snapshot tests are unstable
+//    var t = try dvui.testing.init(.{});
+//    defer t.deinit();
+//
+//    // FIXME: The global show_demo_window variable makes tests order dependent
+//    dvui.Examples.show_demo_window = false;
+//
+//    try dvui.testing.settle(frame);
+//
+//    // Try swapping the names of ./snapshots/app.zig-test.snapshot-X.png
+//    try t.snapshot(@src(), frame);
+//
+//    try dvui.testing.pressKey(.tab, .none);
+//    try dvui.testing.settle(frame);
+//
+//    try t.snapshot(@src(), frame);
+//}
