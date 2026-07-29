@@ -37,6 +37,8 @@ var warn_on_quit: bool = false;
 var warn_on_quit_closing: bool = false;
 var extra_os_win: bool = false;
 
+var active_tab: usize = 0;
+
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
@@ -63,10 +65,12 @@ pub fn appFrame() !dvui.App.Result {
     {
         // Here's the dvui example content, replace/modify with your stuff
 
-        var scaler = dvui.scale(@src(), .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global }, .{ .rect = .cast(dvui.windowRect()) });
+        var scaler = dvui.scale(
+            @src(),
+            .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global },
+            .{ .rect = .cast(dvui.windowRect()) },
+        );
         scaler.deinit();
-
-        if (menu()) |res| return res;
 
         var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .style = .window });
         defer scroll.deinit();
@@ -81,204 +85,52 @@ pub fn appFrame() !dvui.App.Result {
     return .ok;
 }
 
-pub fn menu() ?dvui.App.Result {
-    var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{ .style = .window, .background = true, .expand = .horizontal });
-    defer hbox.deinit();
+const Tab = enum { Main, @"start.gg" };
 
-    var m = dvui.menu(@src(), .horizontal, .{});
-    defer m.deinit();
-
-    if (dvui.menuItemLabel(@src(), "File", .{ .submenu = true }, .{ .tag = "first-focusable" })) |r| {
-        var fw = dvui.floatingMenu(@src(), .{ .from = r }, .{});
-        defer fw.deinit();
-
-        if (dvui.menuItemLabel(@src(), "Close Menu", .{}, .{ .expand = .horizontal }) != null) {
-            m.close();
-        }
-
-        if (dvui.backend.kind != .web) {
-            if (dvui.menuItemLabel(@src(), "Exit", .{}, .{ .expand = .horizontal }) != null) {
-                return .close;
-            }
-        }
-    }
-
-    return null;
-}
+const margin = 4;
 
 pub fn content() ?dvui.App.Result {
-    var tl = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal, .font = .theme(.title) });
-    const lorem = "This is a dvui.App example that can compile on multiple backends.\n";
-    tl.addText(lorem, .{});
-    tl.format("Current backend: {s}", .{@tagName(dvui.backend.kind)}, .{});
-    if (dvui.backend.kind == .web) {
-        tl.format(" : {s}", .{if (dvui.backend.wasm.wasm_about_webgl2() == 1) "webgl2" else "webgl (no mipmaps)"}, .{});
-    }
-    tl.deinit();
+    var tbox = dvui.box(@src(), .{ .dir = .vertical }, .{ .expand = .both });
+    defer tbox.deinit();
 
-    var tl2 = dvui.textLayout(@src(), .{}, .{ .expand = .horizontal });
-    tl2.addText(
-        \\DVUI
-        \\- paints the entire window
-        \\- can show floating windows and dialogs
-        \\- rest of the window is a scroll area
-        \\
-        \\
-    , .{});
-    tl2.addText("Framerate is variable and adjusts as needed for input events and animations.\n\n", .{});
-    tl2.addText("Framerate is capped by vsync.\n\n", .{});
-    tl2.addText("Cursor is always being set by dvui.\n\n", .{});
-    if (dvui.useFreeType) {
-        tl2.addText("Fonts are being rendered by FreeType 2.", .{});
-    } else {
-        tl2.addText("Fonts are being rendered by stb_truetype.", .{});
-    }
-    tl2.deinit();
+    {
+        var tabs = dvui.tabs(@src(), .{}, .{
+            .expand = .horizontal,
+            .margin = dvui.Rect{ .y = margin, .x = margin, .w = margin, .h = 0 },
+        });
+        defer tabs.deinit();
 
-    const label = if (dvui.Examples.show_demo_window) "Hide Demo Window" else "Show Demo Window";
-    if (dvui.button(@src(), label, .{}, .{ .tag = "show-demo-btn" })) {
-        dvui.Examples.show_demo_window = !dvui.Examples.show_demo_window;
-    }
-
-    if (dvui.backend.kind == .sdl3 or dvui.backend.kind == .sdl2) {
-        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
-        defer hbox.deinit();
-
-        dvui.label(@src(), "Window State", .{}, .{ .gravity_y = 0.5 });
-
-        if (dvui.button(@src(), "Fullscreen", .{}, .{})) {
-            dvui.currentWindow().stateSet(.fullscreen);
-        }
-
-        if (dvui.button(@src(), "Maximize", .{}, .{})) {
-            dvui.currentWindow().stateSet(.maximize);
-        }
-
-        if (dvui.button(@src(), "Normal", .{}, .{})) {
-            dvui.currentWindow().stateSet(.normal);
-        }
-    }
-
-    if (dvui.button(@src(), "Debug Window", .{}, .{})) {
-        dvui.toggleDebugWindow();
-    }
-
-    const os_win_label = if (extra_os_win) "Close the Os Window" else "Extra OS Window (experimental)";
-    if (dvui.button(@src(), os_win_label, .{}, .{})) {
-        extra_os_win = !extra_os_win;
-    }
-    if (extra_os_win) {
-        const os_win = dvui.osWindow(
-            @src(),
-            .{ .title = "Child os window (or so I hope)", .size = .{ .w = 500, .h = 300 } },
-            .{ .open_flag = &extra_os_win },
-        );
-        defer os_win.deinit();
-        const b = dvui.box(@src(), .{}, .{ .background = true });
-        defer b.deinit();
-        if (dvui.expander(@src(), "Show me a Spinner !!", .{ .default_expanded = false }, .{})) {
-            dvui.spinner(@src(), .{});
-        }
-        if (dvui.button(@src(), "Close me", .{}, .{})) {
-            extra_os_win = false;
+        inline for (std.meta.fieldNames(Tab), 0..) |tab_name, i| {
+            // easy label only
+            if (tabs.addTabLabel(
+                active_tab == i,
+                tab_name,
+                .{ .font = .{ .weight = .normal } },
+            )) {
+                active_tab = i;
+            }
         }
     }
 
     {
-        var hbox = dvui.box(@src(), .{ .dir = .horizontal }, .{});
-        defer hbox.deinit();
-        dvui.label(@src(), "Pinch Zoom or Scale", .{}, .{});
-        if (dvui.buttonIcon(@src(), "plus", dvui.entypo.plus, .{}, .{}, .{})) {
-            dvui.currentWindow().content_scale *= 1.1;
-        }
+        var border: dvui.Rect = .all(1);
+        border.y = 0;
+        var vbox3 = dvui.box(@src(), .{}, .{
+            .expand = .both,
+            .background = true,
+            .style = .window,
+            .border = border,
+            .role = .tab_panel,
+            .margin = dvui.Rect{ .y = 0, .x = margin, .w = margin, .h = margin },
+            //.color_fill = .blue,
+        });
+        defer vbox3.deinit();
 
-        if (dvui.buttonIcon(@src(), "minus", dvui.entypo.minus, .{}, .{}, .{})) {
-            dvui.currentWindow().content_scale /= 1.1;
-        }
-
-        if (dvui.currentWindow().content_scale != orig_content_scale) {
-            if (dvui.button(@src(), "Reset Scale", .{}, .{})) {
-                dvui.currentWindow().content_scale = orig_content_scale;
-            }
-        }
-    }
-
-    if (dvui.backend.kind != .web) {
-        _ = dvui.checkbox(@src(), &warn_on_quit, "Warn on Quit", .{});
-
-        if (warn_on_quit) {
-            if (warn_on_quit_closing) return .close;
-
-            const wd = dvui.currentWindow().data();
-            for (dvui.events()) |*e| {
-                if (!dvui.eventMatchSimple(e, wd)) continue;
-
-                if ((e.evt == .window and e.evt.window.action == .close) or (e.evt == .app and e.evt.app.action == .quit)) {
-                    e.handle(@src(), wd);
-
-                    const warnAfter: dvui.DialogCallAfterFn = struct {
-                        fn warnAfter(_: dvui.Id, response: dvui.enums.DialogResponse) !void {
-                            if (response == .ok) warn_on_quit_closing = true;
-                        }
-                    }.warnAfter;
-
-                    dvui.dialog(@src(), .{}, .{ .message = "Really Quit?", .cancel_label = "Cancel", .callafterFn = warnAfter });
-                }
-            }
+        dvui.labelEx(@src(), "This is tab {d}", .{active_tab}, .{ .align_x = 0.5, .align_y = 0.5 }, .{ .expand = .horizontal });
+        if (active_tab == 3) {
+            dvui.icon(@src(), "icon", dvui.entypo.aircraft, .{}, .{ .min_size_content = .all(30), .gravity_x = 0.5 });
         }
     }
 
-    return null;
+    return dvui.App.Result.ok;
 }
-
-test "tab order" {
-    var t = try dvui.testing.init(.{});
-    defer t.deinit();
-
-    try dvui.testing.settle(appFrame);
-
-    try dvui.testing.expectNotFocused("first-focusable");
-
-    try dvui.testing.pressKey(.tab, .none);
-    try dvui.testing.settle(appFrame);
-
-    try dvui.testing.expectFocused("first-focusable");
-}
-
-test "open example window" {
-    var t = try dvui.testing.init(.{});
-    defer t.deinit();
-
-    try dvui.testing.settle(appFrame);
-
-    // FIXME: The global show_demo_window variable makes tests order dependent
-    dvui.Examples.show_demo_window = false;
-
-    try std.testing.expect(dvui.tagGet(dvui.Examples.demo_window_tag) == null);
-
-    try dvui.testing.moveTo("show-demo-btn");
-    try dvui.testing.click(.left);
-    try dvui.testing.settle(appFrame);
-
-    try dvui.testing.expectVisible(dvui.Examples.demo_window_tag);
-}
-
-// disabling snapshot tests until we figure out a better (less sensitive) way of doing them
-//test "snapshot" {
-//    // snapshot tests are unstable
-//    var t = try dvui.testing.init(.{});
-//    defer t.deinit();
-//
-//    // FIXME: The global show_demo_window variable makes tests order dependent
-//    dvui.Examples.show_demo_window = false;
-//
-//    try dvui.testing.settle(frame);
-//
-//    // Try swapping the names of ./snapshots/app.zig-test.snapshot-X.png
-//    try t.snapshot(@src(), frame);
-//
-//    try dvui.testing.pressKey(.tab, .none);
-//    try dvui.testing.settle(frame);
-//
-//    try t.snapshot(@src(), frame);
-//}
