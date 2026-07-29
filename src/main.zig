@@ -39,20 +39,35 @@ var extra_os_win: bool = false;
 
 var active_tab: usize = 0;
 
+var theme = dvui.Theme.builtin.adwaita_light;
+
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
     orig_content_scale = win.content_scale;
 
     // Add your own bundled font files...:
-    // try dvui.addFont("NOTO", @embedFile("../src/fonts/NotoSansKR-Regular.ttf"), null);
+    try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.woff2"), null);
+    try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.woff2"), null);
+    try dvui.addFont("NotoBold", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700.woff2"), null);
+    try dvui.addFont("NotoBoldItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700italic.woff2"), null);
+    try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.woff2"), null);
+    try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.woff2"), null);
 
     // If you want a custom theme use something like this:
-    // const theme = switch (win.backend.preferredColorScheme() orelse .light) {
-    //     .light => dvui.Theme.builtin.adwaita_light,
-    //     .dark => dvui.Theme.builtin.adwaita_dark,
-    // };
-    // win.themeSet(theme);
+    //var theme = switch (win.backend.preferredColorScheme() orelse .light) {
+    //    .light => dvui.Theme.builtin.adwaita_light,
+    //    .dark => dvui.Theme.builtin.adwaita_dark,
+    //};
+
+    const default_font_size = 12;
+    theme.font_body = .find(.{ .family = "Noto", .size = default_font_size });
+    theme.font_heading = .find(.{ .family = "NotoBold", .size = default_font_size });
+    theme.font_title = .find(.{ .family = "Noto", .size = default_font_size + 2 });
+    theme.font_mono = .find(.{ .family = "NotoMono", .size = default_font_size });
+    theme.corner = .square;
+
+    win.themeSet(theme);
 }
 
 // Run as app is shutting down before dvui.Window.deinit()
@@ -78,34 +93,60 @@ pub fn appFrame() !dvui.App.Result {
         if (content()) |res| return res;
     }
 
-    // only shows the demo if dvui.Examples.show_demo_window is true
-    // .full -> .lite or comment out to speed up compile times
-    dvui.Examples.demo(.full);
-
     return .ok;
 }
 
 const Tab = enum { Main, @"start.gg" };
 
-const margin = 4;
-
 pub fn content() ?dvui.App.Result {
-    var tbox = dvui.box(@src(), .{ .dir = .vertical }, .{ .expand = .both });
+    var tbox = dvui.box(
+        @src(),
+        .{ .dir = .vertical },
+        .{
+            .expand = .both,
+            .margin = .all(0),
+            .padding = .all(2),
+        },
+    );
     defer tbox.deinit();
 
     {
-        var tabs = dvui.tabs(@src(), .{}, .{
-            .expand = .horizontal,
-            .margin = dvui.Rect{ .y = margin, .x = margin, .w = margin, .h = 0 },
-        });
+        var tabs = dvui.tabs(
+            @src(),
+            .{ .draw_focus = false },
+            .{ .expand = .horizontal },
+        );
         defer tabs.deinit();
 
         inline for (std.meta.fieldNames(Tab), 0..) |tab_name, i| {
-            // easy label only
+            const active = active_tab == i;
+
+            const padding: dvui.Rect = .{
+                .x = 15,
+                .y = 2,
+                .w = 15,
+                .h = 3,
+            };
+            const active_padding: dvui.Rect = .{
+                .x = padding.x - 1,
+                .y = padding.y - 1,
+                .w = padding.w - 1,
+                .h = padding.h + 1,
+            };
+
             if (tabs.addTabLabel(
-                active_tab == i,
+                active,
                 tab_name,
-                .{ .font = .{ .weight = .normal } },
+                .{
+                    .font = .theme(.body),
+                    .corners = .default,
+                    .color_fill_hover = if (active) theme.color(.window, .fill) else null,
+                    .color_fill_press = if (active) theme.color(.window, .fill) else null,
+                    .margin = .{ .h = if (active) 0 else 1 },
+                    .padding = if (active) active_padding else padding,
+                    .border = if (active) .{ .x = 1, .y = 1, .w = 1 } else .all(0),
+                    .color_border = null,
+                },
             )) {
                 active_tab = i;
             }
@@ -121,7 +162,6 @@ pub fn content() ?dvui.App.Result {
             .style = .window,
             .border = border,
             .role = .tab_panel,
-            .margin = dvui.Rect{ .y = 0, .x = margin, .w = margin, .h = margin },
             //.color_fill = .blue,
         });
         defer vbox3.deinit();
