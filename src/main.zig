@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const dvui = @import("dvui");
+const BoundedArray = @import("./bounded_array.zig").BoundedArray;
 
 // To be a dvui App:
 // * declare "dvui_app"
@@ -29,18 +30,42 @@ pub const std_options: std.Options = .{
     .logFn = dvui.App.logFn,
 };
 
+// Globals
+
 var gpa_instance = std.heap.DebugAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-var active_tab: Tab = .Main;
+const Tab = enum { Main, @"start.gg" };
 
-var theme = dvui.Theme.builtin.adwaita_light;
+const MAX_TEXT_LENGTH = 128;
+const DEFAULT_FONT_SIZE = 12;
+
+const PlayerState = struct {
+    name: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
+    team: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
+    score: usize = 0,
+    country: BoundedArray(u8, 2) = .{}, // TODO: define an enum?
+};
+
+const State = struct {
+    active_tab: Tab = .Main,
+    theme: dvui.Theme = dvui.Theme.builtin.adwaita_light,
+    title: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
+    subtitle: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
+    player1: PlayerState = .{},
+    player2: PlayerState = .{},
+};
+var state: State = .{};
 
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
-
-    // Add your own bundled font files...:
+    // Choose dark/light theme based on system preferences
+    state.theme = switch (win.backend.preferredColorScheme() orelse .light) {
+        .light => dvui.Theme.builtin.adwaita_light,
+        .dark => dvui.Theme.builtin.adwaita_dark,
+    };
+    // Custom UI fonts:
     try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.woff2"), null);
     try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.woff2"), null);
     try dvui.addFont("NotoBold", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700.woff2"), null);
@@ -48,19 +73,13 @@ pub fn appInit(win: *dvui.Window) !void {
     try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.woff2"), null);
     try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.woff2"), null);
 
-    theme = switch (win.backend.preferredColorScheme() orelse .light) {
-        .light => dvui.Theme.builtin.adwaita_light,
-        .dark => dvui.Theme.builtin.adwaita_dark,
-    };
+    state.theme.font_body = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE });
+    state.theme.font_heading = .find(.{ .family = "NotoBold", .size = DEFAULT_FONT_SIZE });
+    state.theme.font_title = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE + 2 });
+    state.theme.font_mono = .find(.{ .family = "NotoMono", .size = DEFAULT_FONT_SIZE });
+    state.theme.corner = .square;
 
-    const default_font_size = 12;
-    theme.font_body = .find(.{ .family = "Noto", .size = default_font_size });
-    theme.font_heading = .find(.{ .family = "NotoBold", .size = default_font_size });
-    theme.font_title = .find(.{ .family = "Noto", .size = default_font_size + 2 });
-    theme.font_mono = .find(.{ .family = "NotoMono", .size = default_font_size });
-    theme.corner = .square;
-
-    win.themeSet(theme);
+    win.themeSet(state.theme);
 }
 
 // Run as app is shutting down before dvui.Window.deinit()
@@ -87,8 +106,6 @@ pub fn appFrame() !dvui.App.Result {
     return .ok;
 }
 
-const Tab = enum { Main, @"start.gg" };
-
 pub fn content() ?dvui.App.Result {
     var tbox = dvui.box(
         @src(),
@@ -111,7 +128,7 @@ pub fn content() ?dvui.App.Result {
         defer tabs.deinit();
 
         inline for (std.enums.values(Tab)) |tab| {
-            const active = active_tab == tab;
+            const active = state.active_tab == tab;
 
             const padding: dvui.Rect = .{
                 .x = 15,
@@ -132,15 +149,15 @@ pub fn content() ?dvui.App.Result {
                 .{
                     .font = .theme(.body),
                     .corners = .default,
-                    .color_fill_hover = if (active) theme.color(.window, .fill) else null,
-                    .color_fill_press = if (active) theme.color(.window, .fill) else null,
+                    .color_fill_hover = if (active) state.theme.color(.window, .fill) else null,
+                    .color_fill_press = if (active) state.theme.color(.window, .fill) else null,
                     .margin = .{ .h = if (active) 0 else 1 },
                     .padding = if (active) active_padding else padding,
                     .border = if (active) .{ .x = 1, .y = 1, .w = 1 } else .all(0),
                     .color_border = null,
                 },
             )) {
-                active_tab = tab;
+                state.active_tab = tab;
             }
         }
     }
@@ -158,7 +175,7 @@ pub fn content() ?dvui.App.Result {
         });
         defer tab_box.deinit();
 
-        switch (active_tab) {
+        switch (state.active_tab) {
             .Main => {
                 dvui.label(@src(), "foo", .{}, .{});
                 dvui.label(@src(), "bar", .{}, .{});
