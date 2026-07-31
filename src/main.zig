@@ -38,13 +38,14 @@ const gpa = gpa_instance.allocator();
 const Tab = enum { Main, @"start.gg" };
 
 const MAX_TEXT_LENGTH = 128;
-const DEFAULT_FONT_SIZE = 12;
+const DEFAULT_FONT_SIZE = 10;
+const COUNTRY_CODE_LENGTH = 2;
 
 const PlayerState = struct {
     name: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
     team: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
     score: usize = 0,
-    country: BoundedArray(u8, 2) = .{}, // TODO: define an enum?
+    country: BoundedArray(u8, COUNTRY_CODE_LENGTH) = .{}, // TODO: define an enum?
 };
 
 const State = struct {
@@ -177,8 +178,164 @@ pub fn content() ?dvui.App.Result {
 
         switch (state.active_tab) {
             .Main => {
-                dvui.label(@src(), "foo", .{}, .{});
-                dvui.label(@src(), "bar", .{}, .{});
+                // Title input
+                {
+                    var title_hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer title_hbox.deinit();
+
+                    dvui.label(@src(), "Title", .{}, .{ .gravity_y = 0.5 });
+                    const title_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
+                    title_entry.deinit();
+                }
+
+                // Subtitle input
+                {
+                    var subtitle_hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer subtitle_hbox.deinit();
+
+                    dvui.label(@src(), "Subtitle", .{}, .{ .gravity_y = 0.5 });
+                    const subtitle_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
+                    subtitle_entry.deinit();
+                }
+
+                _ = dvui.separator(@src(), .{
+                    .expand = .horizontal,
+                    .margin = .all(5),
+                    .color_fill = .transparent,
+                });
+
+                // Player 1 inputs
+                {
+                    var p1_hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer p1_hbox.deinit();
+                    {
+                        var p1_vbox = dvui.box(
+                            @src(),
+                            .{ .dir = .vertical },
+                            .{ .expand = .horizontal },
+                        );
+                        defer p1_vbox.deinit();
+
+                        // First row of Player 1 inputs
+                        {
+                            var p1_1st_row = dvui.box(
+                                @src(),
+                                .{ .dir = .horizontal },
+                                .{ .expand = .horizontal },
+                            );
+                            defer p1_1st_row.deinit();
+
+                            dvui.label(@src(), "Player 1", .{}, .{ .gravity_y = 0.5 });
+
+                            // Player 1 name input
+                            const p1_name_entry = dvui.textEntry(
+                                @src(),
+                                .{
+                                    .placeholder = "Name e.g. Bonchan",
+                                    .text = .{
+                                        .internal = .{ .limit = state.player1.name.capacity() },
+                                    },
+                                },
+                                .{ .expand = .horizontal },
+                            );
+                            if (p1_name_entry.text_changed) {
+                                state.player1.name.clear();
+                                state.player1.name.appendSliceAssumeCapacity(
+                                    p1_name_entry.textGet(),
+                                );
+                            }
+                            p1_name_entry.deinit();
+
+                            // Player 1 country input
+                            const p1_country_entry = dvui.textEntry(
+                                @src(),
+                                .{
+                                    .placeholder = "vn",
+                                    .text = .{
+                                        .internal = .{ .limit = state.player1.country.capacity() },
+                                    },
+                                },
+                                .{ .max_size_content = .width(30) },
+                            );
+                            if (p1_country_entry.text_changed) {
+                                state.player1.country.clear();
+                                state.player1.country.appendSliceAssumeCapacity(
+                                    p1_country_entry.textGet(),
+                                );
+                            }
+                            p1_country_entry.deinit();
+
+                            // Player 1 score input
+                            const p1_score_entry = dvui.textEntryNumber(
+                                @src(),
+                                usize,
+                                .{ .value = &state.player1.score },
+                                .{ .max_size_content = .width(30) },
+                            );
+                            _ = p1_score_entry;
+                        }
+
+                        // Second row of Player 1 inputs
+                        {
+                            var p1_team_hbox = dvui.box(
+                                @src(),
+                                .{ .dir = .horizontal },
+                                .{ .expand = .horizontal },
+                            );
+                            defer p1_team_hbox.deinit();
+
+                            dvui.label(@src(), "Team 1", .{}, .{ .gravity_y = 0.5 });
+
+                            // Player 1 team input
+                            const p1_team_entry = dvui.textEntry(
+                                @src(),
+                                .{
+                                    .text = .{
+                                        .internal = .{ .limit = state.player1.team.capacity() },
+                                    },
+                                },
+                                .{ .expand = .horizontal },
+                            );
+                            if (p1_team_entry.text_changed) {
+                                state.player1.team.clear();
+                                state.player1.team.appendSliceAssumeCapacity(
+                                    p1_team_entry.textGet(),
+                                );
+                            }
+                            p1_team_entry.deinit();
+                        }
+                    }
+
+                    if (dvui.button(
+                        @src(),
+                        "Win",
+                        .{},
+                        .{
+                            .expand = .vertical,
+                            .padding = .all(15),
+                        },
+                    )) {
+                        state.player1.score += 1;
+                    }
+                }
+
+                _ = dvui.separator(@src(), .{
+                    .expand = .horizontal,
+                    .margin = .all(5),
+                    .color_fill = .transparent,
+                });
             },
             .@"start.gg" => {
                 dvui.label(@src(), "To be developed...", .{}, .{});
