@@ -54,11 +54,10 @@ pub fn appInit(win: *dvui.Window) !void {
     try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.woff2"), null);
     try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.woff2"), null);
 
-    // If you want a custom theme use something like this:
-    //var theme = switch (win.backend.preferredColorScheme() orelse .light) {
-    //    .light => dvui.Theme.builtin.adwaita_light,
-    //    .dark => dvui.Theme.builtin.adwaita_dark,
-    //};
+    theme = switch (win.backend.preferredColorScheme() orelse .light) {
+        .light => dvui.Theme.builtin.adwaita_light,
+        .dark => dvui.Theme.builtin.adwaita_dark,
+    };
 
     const default_font_size = 12;
     theme.font_body = .find(.{ .family = "Noto", .size = default_font_size });
@@ -78,8 +77,6 @@ pub fn appDeinit(win: *dvui.Window) void {
 // Run each frame to do normal UI
 pub fn appFrame() !dvui.App.Result {
     {
-        // Here's the dvui example content, replace/modify with your stuff
-
         var scaler = dvui.scale(
             @src(),
             .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global },
@@ -162,7 +159,6 @@ pub fn content() ?dvui.App.Result {
             .style = .window,
             .border = border,
             .role = .tab_panel,
-            //.color_fill = .blue,
         });
         defer vbox3.deinit();
 
