@@ -11,7 +11,7 @@ pub const dvui_app: dvui.App = .{
         .options = .{
             .size = .{ .w = 800.0, .h = 600.0 },
             .min_size = .{ .w = 250.0, .h = 350.0 },
-            .title = "DVUI App Example",
+            .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
                 // Could set a default theme here
@@ -29,22 +29,16 @@ pub const std_options: std.Options = .{
     .logFn = dvui.App.logFn,
 };
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance = std.heap.DebugAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-var orig_content_scale: f32 = 1.0;
-var warn_on_quit: bool = false;
-var warn_on_quit_closing: bool = false;
-var extra_os_win: bool = false;
-
-var active_tab: usize = 0;
+var active_tab: Tab = .Main;
 
 var theme = dvui.Theme.builtin.adwaita_light;
 
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
-    orig_content_scale = win.content_scale;
 
     // Add your own bundled font files...:
     try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.woff2"), null);
@@ -107,6 +101,7 @@ pub fn content() ?dvui.App.Result {
     );
     defer tbox.deinit();
 
+    // Tab headers
     {
         var tabs = dvui.tabs(
             @src(),
@@ -115,8 +110,8 @@ pub fn content() ?dvui.App.Result {
         );
         defer tabs.deinit();
 
-        inline for (std.meta.fieldNames(Tab), 0..) |tab_name, i| {
-            const active = active_tab == i;
+        inline for (std.enums.values(Tab)) |tab| {
+            const active = active_tab == tab;
 
             const padding: dvui.Rect = .{
                 .x = 15,
@@ -133,7 +128,7 @@ pub fn content() ?dvui.App.Result {
 
             if (tabs.addTabLabel(
                 active,
-                tab_name,
+                @tagName(tab),
                 .{
                     .font = .theme(.body),
                     .corners = .default,
@@ -145,26 +140,32 @@ pub fn content() ?dvui.App.Result {
                     .color_border = null,
                 },
             )) {
-                active_tab = i;
+                active_tab = tab;
             }
         }
     }
 
+    // Actual tab contents
     {
         var border: dvui.Rect = .all(1);
         border.y = 0;
-        var vbox3 = dvui.box(@src(), .{}, .{
+        var tab_box = dvui.box(@src(), .{}, .{
             .expand = .both,
             .background = true,
             .style = .window,
             .border = border,
             .role = .tab_panel,
         });
-        defer vbox3.deinit();
+        defer tab_box.deinit();
 
-        dvui.labelEx(@src(), "This is tab {d}", .{active_tab}, .{ .align_x = 0.5, .align_y = 0.5 }, .{ .expand = .horizontal });
-        if (active_tab == 3) {
-            dvui.icon(@src(), "icon", dvui.entypo.aircraft, .{}, .{ .min_size_content = .all(30), .gravity_x = 0.5 });
+        switch (active_tab) {
+            .Main => {
+                dvui.label(@src(), "foo", .{}, .{});
+                dvui.label(@src(), "bar", .{}, .{});
+            },
+            .@"start.gg" => {
+                dvui.label(@src(), "To be developed...", .{}, .{});
+            },
         }
     }
 
