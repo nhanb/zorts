@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const dvui = @import("dvui");
 const BoundedArray = @import("./bounded_array.zig").BoundedArray;
+const State = @import("./State.zig");
 
 // To be a dvui App:
 // * declare "dvui_app"
@@ -35,27 +36,6 @@ pub const std_options: std.Options = .{
 var gpa_instance = std.heap.DebugAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-const Tab = enum { Main, @"start.gg" };
-
-const MAX_TEXT_LENGTH = 128;
-const DEFAULT_FONT_SIZE = 10;
-const COUNTRY_CODE_LENGTH = 2;
-
-const PlayerState = struct {
-    name: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
-    team: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
-    score: usize = 0,
-    country: BoundedArray(u8, COUNTRY_CODE_LENGTH) = .{}, // TODO: define an enum?
-};
-
-const State = struct {
-    active_tab: Tab = .Main,
-    theme: dvui.Theme = dvui.Theme.builtin.adwaita_light,
-    title: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
-    subtitle: BoundedArray(u8, MAX_TEXT_LENGTH) = .{},
-    player1: PlayerState = .{},
-    player2: PlayerState = .{},
-};
 var state: State = .{};
 
 // Runs before the first frame, after backend and dvui.Window.init()
@@ -67,17 +47,17 @@ pub fn appInit(win: *dvui.Window) !void {
         .dark => dvui.Theme.builtin.adwaita_dark,
     };
     // Custom UI fonts:
-    try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.woff2"), null);
-    try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.woff2"), null);
-    try dvui.addFont("NotoBold", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700.woff2"), null);
-    try dvui.addFont("NotoBoldItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700italic.woff2"), null);
-    try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.woff2"), null);
-    try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.woff2"), null);
+    try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.ttf"), null);
+    try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.ttf"), null);
+    try dvui.addFont("NotoBold", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700.ttf"), null);
+    try dvui.addFont("NotoBoldItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-700italic.ttf"), null);
+    try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.ttf"), null);
+    try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.ttf"), null);
 
-    state.theme.font_body = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE });
-    state.theme.font_heading = .find(.{ .family = "NotoBold", .size = DEFAULT_FONT_SIZE });
-    state.theme.font_title = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE + 2 });
-    state.theme.font_mono = .find(.{ .family = "NotoMono", .size = DEFAULT_FONT_SIZE });
+    state.theme.font_body = .find(.{ .family = "Noto", .size = State.DEFAULT_FONT_SIZE });
+    state.theme.font_heading = .find(.{ .family = "NotoBold", .size = State.DEFAULT_FONT_SIZE });
+    state.theme.font_title = .find(.{ .family = "Noto", .size = State.DEFAULT_FONT_SIZE + 2 });
+    state.theme.font_mono = .find(.{ .family = "NotoMono", .size = State.DEFAULT_FONT_SIZE });
     state.theme.corner = .square;
 
     win.themeSet(state.theme);
@@ -128,7 +108,7 @@ pub fn content() ?dvui.App.Result {
         );
         defer tabs.deinit();
 
-        inline for (std.enums.values(Tab)) |tab| {
+        inline for (std.enums.values(State.Tab)) |tab| {
             const active = state.active_tab == tab;
 
             const padding: dvui.Rect = .{
