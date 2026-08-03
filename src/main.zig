@@ -181,15 +181,12 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    const title_entry = dvui.textEntry(
+                    widgets.textEntry(
                         @src(),
-                        .{ .text = .{ .buffer = &state.title.buf } },
+                        &state.title,
+                        .{},
                         .{ .expand = .horizontal },
                     );
-                    if (title_entry.text_changed) {
-                        state.title.len = title_entry.len;
-                    }
-                    title_entry.deinit();
                 }
 
                 // Subtitle input
@@ -211,15 +208,12 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    const subtitle_entry = dvui.textEntry(
+                    widgets.textEntry(
                         @src(),
+                        &state.subtitle,
                         .{ .text = .{ .buffer = &state.subtitle.buf } },
                         .{ .expand = .horizontal },
                     );
-                    if (subtitle_entry.text_changed) {
-                        state.subtitle.len = subtitle_entry.len;
-                    }
-                    subtitle_entry.deinit();
                 }
 
                 // Player 1 inputs
@@ -273,8 +267,8 @@ pub fn content() ?dvui.App.Result {
 }
 
 fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) void {
-    log.info("Titles: '{s}', '{s}'", .{ state.title.slice(), state.subtitle.slice() });
-    log.info("Player {d}: '{s}'", .{ @intFromEnum(player_num) + 1, player.team.slice() });
+    //log.info("Titles: '{s}', '{s}'", .{ state.title.slice(), state.subtitle.slice() });
+    //log.info("Player {d}: '{s}'", .{ @intFromEnum(player_num) + 1, player.team.slice() });
 
     const id = @intFromEnum(player_num);
 
@@ -314,36 +308,20 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             );
 
             // Player name input
-            const p1_name_entry = dvui.textEntry(
+            widgets.textEntry(
                 @src(),
-                .{
-                    .placeholder = "Name e.g. Bonchan",
-                    .text = .{
-                        .buffer = &player.name.buf,
-                    },
-                },
+                &player.name,
+                .{ .placeholder = "Name e.g. Bonchan" },
                 .{ .expand = .horizontal, .id_extra = id },
             );
-            if (p1_name_entry.text_changed) {
-                player.name.len = p1_name_entry.len;
-            }
-            p1_name_entry.deinit();
 
             // Player country input
-            const p1_country_entry = dvui.textEntry(
+            widgets.textEntry(
                 @src(),
-                .{
-                    .placeholder = "vn",
-                    .text = .{
-                        .buffer = &player.country,
-                    },
-                },
+                &player.country,
+                .{ .placeholder = "vn" },
                 .{ .max_size_content = .width(30), .id_extra = id },
             );
-            if (p1_country_entry.text_changed) {
-                player.name.len = p1_country_entry.len;
-            }
-            p1_country_entry.deinit();
 
             // Player score input
             const p1_score_entry = dvui.textEntryNumber(
@@ -376,19 +354,12 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             );
 
             // Player team input
-            const p1_team_entry = dvui.textEntry(
+            widgets.textEntry(
                 @src(),
-                .{
-                    .text = .{
-                        .buffer = &player.team.buf,
-                    },
-                },
+                &player.team,
+                .{},
                 .{ .expand = .horizontal, .id_extra = id },
             );
-            if (p1_team_entry.text_changed) {
-                player.team.len = p1_team_entry.len;
-            }
-            p1_team_entry.deinit();
         }
     }
 

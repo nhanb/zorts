@@ -18,7 +18,7 @@ pub const PlayerState = struct {
     name: String(MAX_TEXT_LENGTH) = .{},
     team: String(MAX_TEXT_LENGTH) = .{},
     score: usize = 0,
-    country: [2]u8 = undefined, // TODO: define an enum?
+    country: String(2) = .{}, // TODO: define an enum?
 };
 
 pub fn String(comptime capacity: usize) type {
