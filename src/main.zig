@@ -188,134 +188,21 @@ pub fn content() ?dvui.App.Result {
 
                 _ = dvui.separator(@src(), .{
                     .expand = .horizontal,
-                    .margin = .all(5),
+                    .margin = .all(10),
                     .color_fill = .transparent,
                 });
 
                 // Player 1 inputs
-                {
-                    var p1_hbox = dvui.box(
-                        @src(),
-                        .{ .dir = .horizontal },
-                        .{ .expand = .horizontal },
-                    );
-                    defer p1_hbox.deinit();
-                    {
-                        var p1_vbox = dvui.box(
-                            @src(),
-                            .{ .dir = .vertical },
-                            .{ .expand = .horizontal },
-                        );
-                        defer p1_vbox.deinit();
-
-                        // First row of Player 1 inputs
-                        {
-                            var p1_1st_row = dvui.box(
-                                @src(),
-                                .{ .dir = .horizontal },
-                                .{ .expand = .horizontal },
-                            );
-                            defer p1_1st_row.deinit();
-
-                            dvui.label(@src(), "Player 1", .{}, .{ .gravity_y = 0.5 });
-
-                            // Player 1 name input
-                            const p1_name_entry = dvui.textEntry(
-                                @src(),
-                                .{
-                                    .placeholder = "Name e.g. Bonchan",
-                                    .text = .{
-                                        .internal = .{ .limit = state.player1.name.capacity() },
-                                    },
-                                },
-                                .{ .expand = .horizontal },
-                            );
-                            if (p1_name_entry.text_changed) {
-                                state.player1.name.clear();
-                                state.player1.name.appendSliceAssumeCapacity(
-                                    p1_name_entry.textGet(),
-                                );
-                            }
-                            p1_name_entry.deinit();
-
-                            // Player 1 country input
-                            const p1_country_entry = dvui.textEntry(
-                                @src(),
-                                .{
-                                    .placeholder = "vn",
-                                    .text = .{
-                                        .internal = .{ .limit = state.player1.country.capacity() },
-                                    },
-                                },
-                                .{ .max_size_content = .width(30) },
-                            );
-                            if (p1_country_entry.text_changed) {
-                                state.player1.country.clear();
-                                state.player1.country.appendSliceAssumeCapacity(
-                                    p1_country_entry.textGet(),
-                                );
-                            }
-                            p1_country_entry.deinit();
-
-                            // Player 1 score input
-                            const p1_score_entry = dvui.textEntryNumber(
-                                @src(),
-                                usize,
-                                .{ .value = &state.player1.score },
-                                .{ .max_size_content = .width(30) },
-                            );
-                            _ = p1_score_entry;
-                        }
-
-                        // Second row of Player 1 inputs
-                        {
-                            var p1_team_hbox = dvui.box(
-                                @src(),
-                                .{ .dir = .horizontal },
-                                .{ .expand = .horizontal },
-                            );
-                            defer p1_team_hbox.deinit();
-
-                            dvui.label(@src(), "Team 1", .{}, .{ .gravity_y = 0.5 });
-
-                            // Player 1 team input
-                            const p1_team_entry = dvui.textEntry(
-                                @src(),
-                                .{
-                                    .text = .{
-                                        .internal = .{ .limit = state.player1.team.capacity() },
-                                    },
-                                },
-                                .{ .expand = .horizontal },
-                            );
-                            if (p1_team_entry.text_changed) {
-                                state.player1.team.clear();
-                                state.player1.team.appendSliceAssumeCapacity(
-                                    p1_team_entry.textGet(),
-                                );
-                            }
-                            p1_team_entry.deinit();
-                        }
-                    }
-
-                    if (dvui.button(
-                        @src(),
-                        "Win",
-                        .{},
-                        .{
-                            .expand = .vertical,
-                            .padding = .all(15),
-                        },
-                    )) {
-                        state.player1.score += 1;
-                    }
-                }
+                playerInputs(&state.player1, .one);
 
                 _ = dvui.separator(@src(), .{
                     .expand = .horizontal,
-                    .margin = .all(5),
+                    .margin = .all(10),
                     .color_fill = .transparent,
                 });
+
+                // Player 2 inputs
+                playerInputs(&state.player2, .two);
             },
             .@"start.gg" => {
                 dvui.label(@src(), "To be developed...", .{}, .{});
@@ -324,4 +211,135 @@ pub fn content() ?dvui.App.Result {
     }
 
     return dvui.App.Result.ok;
+}
+
+fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) void {
+    const id = @intFromEnum(player_num);
+
+    var p1_hbox = dvui.box(
+        @src(),
+        .{ .dir = .horizontal },
+        .{ .expand = .horizontal, .id_extra = id },
+    );
+    defer p1_hbox.deinit();
+    {
+        var p1_vbox = dvui.box(
+            @src(),
+            .{ .dir = .vertical },
+            .{ .expand = .horizontal, .id_extra = id },
+        );
+        defer p1_vbox.deinit();
+
+        // First row of Player inputs
+        {
+            var p1_1st_row = dvui.box(
+                @src(),
+                .{ .dir = .horizontal },
+                .{ .expand = .horizontal, .id_extra = id },
+            );
+            defer p1_1st_row.deinit();
+
+            dvui.label(
+                @src(),
+                "Player {d}",
+                .{@intFromEnum(player_num) + 1},
+                .{ .gravity_y = 0.5, .id_extra = id },
+            );
+
+            // Player name input
+            const p1_name_entry = dvui.textEntry(
+                @src(),
+                .{
+                    .placeholder = "Name e.g. Bonchan",
+                    .text = .{
+                        .internal = .{ .limit = player.name.capacity() },
+                    },
+                },
+                .{ .expand = .horizontal, .id_extra = id },
+            );
+            if (p1_name_entry.text_changed) {
+                player.name.clear();
+                player.name.appendSliceAssumeCapacity(
+                    p1_name_entry.textGet(),
+                );
+            }
+            p1_name_entry.deinit();
+
+            // Player country input
+            const p1_country_entry = dvui.textEntry(
+                @src(),
+                .{
+                    .placeholder = "vn",
+                    .text = .{
+                        .internal = .{ .limit = player.country.capacity() },
+                    },
+                },
+                .{ .max_size_content = .width(30), .id_extra = id },
+            );
+            if (p1_country_entry.text_changed) {
+                player.country.clear();
+                player.country.appendSliceAssumeCapacity(
+                    p1_country_entry.textGet(),
+                );
+            }
+            p1_country_entry.deinit();
+
+            // Player score input
+            const p1_score_entry = dvui.textEntryNumber(
+                @src(),
+                usize,
+                .{ .value = &player.score },
+                .{ .max_size_content = .width(30), .id_extra = id },
+            );
+            _ = p1_score_entry;
+        }
+
+        // Second row of Player inputs
+        {
+            var p1_team_hbox = dvui.box(
+                @src(),
+                .{ .dir = .horizontal },
+                .{ .expand = .horizontal, .id_extra = id },
+            );
+            defer p1_team_hbox.deinit();
+
+            dvui.label(
+                @src(),
+                "Team {d}",
+                .{@intFromEnum(player_num) + 1},
+                .{ .gravity_y = 0.5 },
+            );
+
+            // Player team input
+            const p1_team_entry = dvui.textEntry(
+                @src(),
+                .{
+                    .text = .{
+                        .internal = .{ .limit = player.team.capacity() },
+                    },
+                },
+                .{ .expand = .horizontal, .id_extra = id },
+            );
+            if (p1_team_entry.text_changed) {
+                player.team.clear();
+                player.team.appendSliceAssumeCapacity(
+                    p1_team_entry.textGet(),
+                );
+            }
+            p1_team_entry.deinit();
+        }
+    }
+
+    if (dvui.button(
+        @src(),
+        "Win",
+        .{},
+        .{
+            .expand = .vertical,
+            .padding = .all(15),
+            .id_extra = id,
+        },
+    )) {
+        player.score += 1;
+    }
 }
