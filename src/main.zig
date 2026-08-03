@@ -13,8 +13,8 @@ const LABEL_WIDTH = 60;
 pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
-            .size = .{ .w = 800.0, .h = 600.0 },
-            .min_size = .{ .w = 500.0, .h = 350.0 },
+            .size = .{ .w = 500.0, .h = 400.0 },
+            .min_size = .{ .w = 500.0 },
             .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
@@ -207,20 +207,20 @@ pub fn content() ?dvui.App.Result {
                     subtitle_entry.deinit();
                 }
 
-                _ = dvui.separator(@src(), .{
-                    .expand = .horizontal,
-                    .margin = .all(10),
-                    .color_fill = .transparent,
-                });
+                //_ = dvui.separator(@src(), .{
+                //    .expand = .horizontal,
+                //    .margin = .all(10),
+                //    .color_fill = .transparent,
+                //});
 
                 // Player 1 inputs
                 playerInputs(&state.player1, .one);
 
-                _ = dvui.separator(@src(), .{
-                    .expand = .horizontal,
-                    .margin = .all(10),
-                    .color_fill = .transparent,
-                });
+                //_ = dvui.separator(@src(), .{
+                //    .expand = .horizontal,
+                //    .margin = .all(10),
+                //    .color_fill = .transparent,
+                //});
 
                 // Player 2 inputs
                 playerInputs(&state.player2, .two);
