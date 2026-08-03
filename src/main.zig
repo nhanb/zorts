@@ -1,8 +1,10 @@
 const std = @import("std");
+const log = std.log;
 const builtin = @import("builtin");
 const dvui = @import("dvui");
 const BoundedArray = @import("./bounded_array.zig").BoundedArray;
 const State = @import("./State.zig");
+const widgets = @import("./widgets.zig");
 
 const LABEL_WIDTH = 60;
 
@@ -14,7 +16,7 @@ pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
             .size = .{ .w = 500.0, .h = 400.0 },
-            .min_size = .{ .w = 500.0 },
+            .min_size = .{ .w = 500.0, .h = 370 },
             .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
@@ -207,23 +209,46 @@ pub fn content() ?dvui.App.Result {
                     subtitle_entry.deinit();
                 }
 
-                //_ = dvui.separator(@src(), .{
-                //    .expand = .horizontal,
-                //    .margin = .all(10),
-                //    .color_fill = .transparent,
-                //});
-
                 // Player 1 inputs
                 playerInputs(&state.player1, .one);
 
-                //_ = dvui.separator(@src(), .{
-                //    .expand = .horizontal,
-                //    .margin = .all(10),
-                //    .color_fill = .transparent,
-                //});
-
                 // Player 2 inputs
                 playerInputs(&state.player2, .two);
+
+                // Bottom buttons group
+                {
+                    const buttons_hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{},
+                    );
+                    defer buttons_hbox.deinit();
+
+                    if (widgets.button(@src(), "Apply", .{})) {
+                        // TODO
+                    }
+
+                    if (widgets.button(@src(), "Discard", .{})) {
+                        // TODO
+                    }
+
+                    if (widgets.button(@src(), "Reset scores", .{})) {
+                        // TODO
+                    }
+
+                    if (widgets.button(@src(), "Swap players", .{})) {
+                        const tmp = state.player1;
+                        state.player1 = state.player2;
+                        state.player2 = tmp;
+                    }
+                }
+
+                dvui.label(
+                    @src(),
+                    "Point your OBS browser source to http://localhost:1337",
+                    .{},
+                    .{ .gravity_y = 1 },
+                );
             },
             .@"start.gg" => {
                 dvui.label(@src(), "To be developed...", .{}, .{});
@@ -360,15 +385,13 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
         }
     }
 
-    if (dvui.button(
+    if (widgets.button(
         @src(),
         "Win",
-        .{},
         .{
             .expand = .vertical,
             .padding = .all(15),
             .id_extra = id,
-            .border = .all(1),
         },
     )) {
         player.score += 1;
