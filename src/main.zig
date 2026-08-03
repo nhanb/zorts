@@ -14,8 +14,8 @@ const LABEL_WIDTH = 60;
 pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
-            .size = .{ .w = 500.0, .h = 400.0 },
-            .min_size = .{ .w = 500.0, .h = 370 },
+            .size = .{ .w = 500, .h = 350 },
+            .min_size = .{ .w = 500, .h = 300 },
             .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
@@ -227,7 +227,7 @@ pub fn content() ?dvui.App.Result {
                     const buttons_hbox = dvui.box(
                         @src(),
                         .{ .dir = .horizontal },
-                        .{},
+                        .{ .margin = .{ .y = 10 }, .gravity_x = 0.5 },
                     );
                     defer buttons_hbox.deinit();
 

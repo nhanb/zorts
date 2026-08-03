@@ -8,6 +8,8 @@ const State = @import("./State.zig");
 pub fn button(src: std.builtin.SourceLocation, label_str: []const u8, opts: Options) bool {
     var final_opts = opts;
     final_opts.border = .all(1);
+    final_opts.corners = .round(3);
+    final_opts.padding = .{ .x = 15, .w = 15, .y = 6, .h = 7 };
 
     return dvui.button(src, label_str, .{}, final_opts);
 }
