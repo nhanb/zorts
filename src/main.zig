@@ -4,6 +4,8 @@ const dvui = @import("dvui");
 const BoundedArray = @import("./bounded_array.zig").BoundedArray;
 const State = @import("./State.zig");
 
+const LABEL_WIDTH = 60;
+
 // To be a dvui App:
 // * declare "dvui_app"
 // * expose the backend's main function
@@ -12,7 +14,7 @@ pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
             .size = .{ .w = 800.0, .h = 600.0 },
-            .min_size = .{ .w = 250.0, .h = 350.0 },
+            .min_size = .{ .w = 500.0, .h = 350.0 },
             .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
@@ -46,6 +48,7 @@ pub fn appInit(win: *dvui.Window) !void {
         .light => dvui.Theme.builtin.adwaita_light,
         .dark => dvui.Theme.builtin.adwaita_dark,
     };
+
     // Custom UI fonts:
     try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.ttf"), null);
     try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.ttf"), null);
@@ -94,7 +97,7 @@ pub fn content() ?dvui.App.Result {
         .{
             .expand = .both,
             .margin = .all(0),
-            .padding = .all(2),
+            .padding = .all(4),
         },
     );
     defer tbox.deinit();
@@ -167,7 +170,16 @@ pub fn content() ?dvui.App.Result {
                     );
                     defer title_hbox.deinit();
 
-                    dvui.label(@src(), "Title", .{}, .{ .gravity_y = 0.5 });
+                    dvui.labelEx(
+                        @src(),
+                        "Title",
+                        .{},
+                        .{ .align_x = 1 },
+                        .{
+                            .gravity_y = 0.5,
+                            .min_size_content = .width(LABEL_WIDTH),
+                        },
+                    );
                     const title_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
                     title_entry.deinit();
                 }
@@ -181,7 +193,16 @@ pub fn content() ?dvui.App.Result {
                     );
                     defer subtitle_hbox.deinit();
 
-                    dvui.label(@src(), "Subtitle", .{}, .{ .gravity_y = 0.5 });
+                    dvui.labelEx(
+                        @src(),
+                        "Subtitle",
+                        .{},
+                        .{ .align_x = 1 },
+                        .{
+                            .gravity_y = 0.5,
+                            .min_size_content = .width(LABEL_WIDTH),
+                        },
+                    );
                     const subtitle_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
                     subtitle_entry.deinit();
                 }
@@ -239,11 +260,16 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             );
             defer p1_1st_row.deinit();
 
-            dvui.label(
+            dvui.labelEx(
                 @src(),
                 "Player {d}",
                 .{@intFromEnum(player_num) + 1},
-                .{ .gravity_y = 0.5, .id_extra = id },
+                .{ .align_x = 1 },
+                .{
+                    .gravity_y = 0.5,
+                    .id_extra = id,
+                    .min_size_content = .width(LABEL_WIDTH),
+                },
             );
 
             // Player name input
@@ -303,11 +329,15 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             );
             defer p1_team_hbox.deinit();
 
-            dvui.label(
+            dvui.labelEx(
                 @src(),
                 "Team {d}",
                 .{@intFromEnum(player_num) + 1},
-                .{ .gravity_y = 0.5 },
+                .{ .align_x = 1 },
+                .{
+                    .gravity_y = 0.5,
+                    .min_size_content = .width(LABEL_WIDTH),
+                },
             );
 
             // Player team input
@@ -338,6 +368,7 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             .expand = .vertical,
             .padding = .all(15),
             .id_extra = id,
+            .border = .all(1),
         },
     )) {
         player.score += 1;
