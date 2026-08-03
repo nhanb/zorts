@@ -2,7 +2,6 @@ const std = @import("std");
 const log = std.log;
 const builtin = @import("builtin");
 const dvui = @import("dvui");
-const BoundedArray = @import("./bounded_array.zig").BoundedArray;
 const State = @import("./State.zig");
 const widgets = @import("./widgets.zig");
 
@@ -182,7 +181,14 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    const title_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
+                    const title_entry = dvui.textEntry(
+                        @src(),
+                        .{ .text = .{ .buffer = &state.title.buf } },
+                        .{ .expand = .horizontal },
+                    );
+                    if (title_entry.text_changed) {
+                        state.title.len = title_entry.len;
+                    }
                     title_entry.deinit();
                 }
 
@@ -205,7 +211,14 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    const subtitle_entry = dvui.textEntry(@src(), .{}, .{ .expand = .horizontal });
+                    const subtitle_entry = dvui.textEntry(
+                        @src(),
+                        .{ .text = .{ .buffer = &state.subtitle.buf } },
+                        .{ .expand = .horizontal },
+                    );
+                    if (subtitle_entry.text_changed) {
+                        state.subtitle.len = subtitle_entry.len;
+                    }
                     subtitle_entry.deinit();
                 }
 
@@ -260,6 +273,9 @@ pub fn content() ?dvui.App.Result {
 }
 
 fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) void {
+    log.info("Titles: '{s}', '{s}'", .{ state.title.slice(), state.subtitle.slice() });
+    log.info("Player {d}: '{s}'", .{ @intFromEnum(player_num) + 1, player.team.slice() });
+
     const id = @intFromEnum(player_num);
 
     var p1_hbox = dvui.box(
@@ -303,16 +319,13 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
                 .{
                     .placeholder = "Name e.g. Bonchan",
                     .text = .{
-                        .internal = .{ .limit = player.name.capacity() },
+                        .buffer = &player.name.buf,
                     },
                 },
                 .{ .expand = .horizontal, .id_extra = id },
             );
             if (p1_name_entry.text_changed) {
-                player.name.clear();
-                player.name.appendSliceAssumeCapacity(
-                    p1_name_entry.textGet(),
-                );
+                player.name.len = p1_name_entry.len;
             }
             p1_name_entry.deinit();
 
@@ -322,16 +335,13 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
                 .{
                     .placeholder = "vn",
                     .text = .{
-                        .internal = .{ .limit = player.country.capacity() },
+                        .buffer = &player.country,
                     },
                 },
                 .{ .max_size_content = .width(30), .id_extra = id },
             );
             if (p1_country_entry.text_changed) {
-                player.country.clear();
-                player.country.appendSliceAssumeCapacity(
-                    p1_country_entry.textGet(),
-                );
+                player.name.len = p1_country_entry.len;
             }
             p1_country_entry.deinit();
 
@@ -370,16 +380,13 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
                 @src(),
                 .{
                     .text = .{
-                        .internal = .{ .limit = player.team.capacity() },
+                        .buffer = &player.team.buf,
                     },
                 },
                 .{ .expand = .horizontal, .id_extra = id },
             );
             if (p1_team_entry.text_changed) {
-                player.team.clear();
-                player.team.appendSliceAssumeCapacity(
-                    p1_team_entry.textGet(),
-                );
+                player.team.len = p1_team_entry.len;
             }
             p1_team_entry.deinit();
         }
