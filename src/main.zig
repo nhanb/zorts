@@ -250,12 +250,30 @@ pub fn content() ?dvui.App.Result {
                     }
                 }
 
-                dvui.label(
-                    @src(),
-                    "Point your OBS browser source to http://localhost:1337",
-                    .{},
-                    .{ .gravity_y = 1 },
-                );
+                // Instruction message
+                {
+                    const hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .gravity_y = 1 },
+                    );
+                    defer hbox.deinit();
+
+                    dvui.label(
+                        @src(),
+                        "Point your OBS browser source to",
+                        .{},
+                        .{},
+                    );
+                    dvui.link(
+                        @src(),
+                        .{
+                            .label = "http://localhost:1337",
+                            .url = "http://localhost:1337",
+                        },
+                        .{ .margin = .{ .x = -6 } },
+                    );
+                }
             },
             .@"start.gg" => {
                 dvui.label(@src(), "To be developed...", .{}, .{});
