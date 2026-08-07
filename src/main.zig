@@ -14,8 +14,8 @@ const LABEL_WIDTH = 60;
 pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
-            .size = .{ .w = 500, .h = 350 },
-            .min_size = .{ .w = 500, .h = 300 },
+            .size = .{ .w = 500, .h = 400 },
+            .min_size = .{ .w = 500, .h = 380 },
             .title = "Overly Repetitive Tedius Software (in Zig)",
             //.icon = window_icon_png,
             .window_init_options = .{
