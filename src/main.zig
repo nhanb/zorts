@@ -39,11 +39,27 @@ pub const std_options: std.Options = .{
 var gpa_instance = std.heap.DebugAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-var state: State = .{};
+var state: State = .{
+    .title = .init("Saigon Cup 2026"),
+    .subtitle = .init("Winners Finals"),
+    .player1 = .{
+        .team = .init("Team 1"),
+        .country = .init("vn"),
+        .name = .init("Nguyễn-san"),
+        .score = 2,
+    },
+    .player2 = .{
+        .team = .init("Team 2"),
+        .country = .init("jp"),
+        .name = .init("Diego"),
+        .score = 1,
+    },
+};
 
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
+
     // Choose dark/light theme based on system preferences
     state.theme = switch (win.backend.preferredColorScheme() orelse .light) {
         .light => dvui.Theme.builtin.adwaita_light,
@@ -285,9 +301,6 @@ pub fn content() ?dvui.App.Result {
 }
 
 fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) void {
-    //log.info("Titles: '{s}', '{s}'", .{ state.title.slice(), state.subtitle.slice() });
-    //log.info("Player {d}: '{s}'", .{ @intFromEnum(player_num) + 1, player.team.slice() });
-
     const id = @intFromEnum(player_num);
 
     var p1_hbox = dvui.box(
