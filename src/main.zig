@@ -6,6 +6,9 @@ const State = @import("./State.zig");
 const widgets = @import("./widgets.zig");
 
 const LABEL_WIDTH = 60;
+const DEFAULT_FONT_SIZE = 10;
+
+var theme: dvui.Theme = dvui.Theme.builtin.adwaita_light;
 
 // To be a dvui App:
 // * declare "dvui_app"
@@ -61,7 +64,7 @@ var state: State = .{
 pub fn appInit(win: *dvui.Window) !void {
 
     // Choose dark/light theme based on system preferences
-    state.theme = switch (win.backend.preferredColorScheme() orelse .light) {
+    theme = switch (win.backend.preferredColorScheme() orelse .light) {
         .light => dvui.Theme.builtin.adwaita_light,
         .dark => dvui.Theme.builtin.adwaita_dark,
     };
@@ -74,13 +77,13 @@ pub fn appInit(win: *dvui.Window) !void {
     try dvui.addFont("NotoMono", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-regular.ttf"), null);
     try dvui.addFont("NotoMonoBold", @embedFile("fonts/noto-sans-mono-v37-latin_vietnamese-700.ttf"), null);
 
-    state.theme.font_body = .find(.{ .family = "Noto", .size = State.DEFAULT_FONT_SIZE });
-    state.theme.font_heading = .find(.{ .family = "NotoBold", .size = State.DEFAULT_FONT_SIZE });
-    state.theme.font_title = .find(.{ .family = "Noto", .size = State.DEFAULT_FONT_SIZE + 2 });
-    state.theme.font_mono = .find(.{ .family = "NotoMono", .size = State.DEFAULT_FONT_SIZE });
-    state.theme.corner = .square;
+    theme.font_body = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE });
+    theme.font_heading = .find(.{ .family = "NotoBold", .size = DEFAULT_FONT_SIZE });
+    theme.font_title = .find(.{ .family = "Noto", .size = DEFAULT_FONT_SIZE + 2 });
+    theme.font_mono = .find(.{ .family = "NotoMono", .size = DEFAULT_FONT_SIZE });
+    theme.corner = .square;
 
-    win.themeSet(state.theme);
+    win.themeSet(theme);
 }
 
 // Run as app is shutting down before dvui.Window.deinit()
@@ -150,8 +153,8 @@ pub fn content() ?dvui.App.Result {
                 .{
                     .font = .theme(.body),
                     .corners = .default,
-                    .color_fill_hover = if (active) state.theme.color(.window, .fill) else null,
-                    .color_fill_press = if (active) state.theme.color(.window, .fill) else null,
+                    .color_fill_hover = if (active) theme.color(.window, .fill) else null,
+                    .color_fill_press = if (active) theme.color(.window, .fill) else null,
                     .margin = .{ .h = if (active) 0 else 1 },
                     .padding = if (active) active_padding else padding,
                     .border = if (active) .{ .x = 1, .y = 1, .w = 1 } else .all(0),

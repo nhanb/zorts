@@ -2,10 +2,8 @@ const std = @import("std");
 const dvui = @import("dvui");
 
 pub const MAX_TEXT_LENGTH = 64;
-pub const DEFAULT_FONT_SIZE = 10;
 
 active_tab: Tab = .Main,
-theme: dvui.Theme = dvui.Theme.builtin.adwaita_light,
 title: BoundedString(MAX_TEXT_LENGTH) = .{},
 subtitle: BoundedString(MAX_TEXT_LENGTH) = .{},
 player1: PlayerState = .{},
