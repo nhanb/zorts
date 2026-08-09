@@ -58,10 +58,14 @@ var state: State = .{
         .score = 1,
     },
 };
+var applied_state = State{};
 
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
+    applied_state = state;
+    state.title = .init("Saigon Cup 2027");
+    state.player2.name = .init("Shirayuki-sama");
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -203,6 +207,7 @@ pub fn content() ?dvui.App.Result {
                     widgets.textEntry(
                         @src(),
                         &state.title,
+                        applied_state.title.slice(),
                         .{},
                         .{ .expand = .horizontal },
                     );
@@ -230,16 +235,17 @@ pub fn content() ?dvui.App.Result {
                     widgets.textEntry(
                         @src(),
                         &state.subtitle,
+                        applied_state.subtitle.slice(),
                         .{ .text = .{ .buffer = &state.subtitle.buf } },
                         .{ .expand = .horizontal },
                     );
                 }
 
                 // Player 1 inputs
-                playerInputs(&state.player1, .one);
+                playerInputs(&state.player1, &applied_state.player1, .one);
 
                 // Player 2 inputs
-                playerInputs(&state.player2, .two);
+                playerInputs(&state.player2, &applied_state.player2, .two);
 
                 // Bottom buttons group
                 {
@@ -303,7 +309,11 @@ pub fn content() ?dvui.App.Result {
     return dvui.App.Result.ok;
 }
 
-fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) void {
+fn playerInputs(
+    player: *State.PlayerState,
+    applied_player: *State.PlayerState,
+    player_num: enum(u8) { one, two },
+) void {
     const id = @intFromEnum(player_num);
 
     var p1_hbox = dvui.box(
@@ -345,6 +355,7 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             widgets.textEntry(
                 @src(),
                 &player.name,
+                applied_player.name.slice(),
                 .{ .placeholder = "Name e.g. Bonchan" },
                 .{ .expand = .horizontal, .id_extra = id },
             );
@@ -353,18 +364,13 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             widgets.textEntry(
                 @src(),
                 &player.country,
+                applied_player.country.slice(),
                 .{ .placeholder = "vn" },
                 .{ .max_size_content = .width(30), .id_extra = id },
             );
 
             // Player score input
-            const p1_score_entry = dvui.textEntryNumber(
-                @src(),
-                usize,
-                .{ .value = &player.score },
-                .{ .max_size_content = .width(30), .id_extra = id },
-            );
-            _ = p1_score_entry;
+            widgets.textEntryNumber(@src(), &player.score, applied_player.score, id);
         }
 
         // Second row of Player inputs
@@ -391,6 +397,7 @@ fn playerInputs(player: *State.PlayerState, player_num: enum(u8) { one, two }) v
             widgets.textEntry(
                 @src(),
                 &player.team,
+                applied_player.team.slice(),
                 .{},
                 .{ .expand = .horizontal, .id_extra = id },
             );
