@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 const dvui = @import("dvui");
 const State = @import("./State.zig");
 const widgets = @import("./widgets.zig");
+const WebServer = @import("./WebServer.zig");
 
 const LABEL_WIDTH = 60;
 const DEFAULT_FONT_SIZE = 10;
@@ -60,12 +61,18 @@ var state: State = .{
 };
 var applied_state = State{};
 
+var threaded_io: std.Io.Threaded = undefined;
+var web_server: *WebServer = undefined;
+
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
     applied_state = state;
     state.title = .init("Saigon Cup 2027");
     state.player2.name = .init("Shirayuki-sama");
+
+    threaded_io = .init(gpa, .{});
+    web_server = try .init(gpa, threaded_io.io());
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -93,6 +100,7 @@ pub fn appInit(win: *dvui.Window) !void {
 // Run as app is shutting down before dvui.Window.deinit()
 pub fn appDeinit(win: *dvui.Window) void {
     _ = win;
+    web_server.deinit();
 }
 
 // Run each frame to do normal UI
