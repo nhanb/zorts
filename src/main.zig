@@ -261,11 +261,12 @@ pub fn content() ?dvui.App.Result {
                     }
 
                     if (widgets.button(@src(), "Discard", .{})) {
-                        // TODO
+                        state = applied_state;
                     }
 
                     if (widgets.button(@src(), "Reset scores", .{})) {
-                        // TODO
+                        state.player1.score = 0;
+                        state.player2.score = 0;
                     }
 
                     if (widgets.button(@src(), "Swap players", .{})) {
