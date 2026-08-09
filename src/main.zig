@@ -72,7 +72,7 @@ pub fn appInit(win: *dvui.Window) !void {
     state.player2.name = .init("Shirayuki-sama");
 
     threaded_io = .init(gpa, .{});
-    web_server = try .init(gpa, threaded_io.io());
+    web_server = try .init(gpa, threaded_io.io(), &applied_state);
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -265,7 +265,7 @@ pub fn content() ?dvui.App.Result {
                     defer buttons_hbox.deinit();
 
                     if (widgets.button(@src(), "Apply", .{})) {
-                        // TODO
+                        applied_state = state;
                     }
 
                     if (widgets.button(@src(), "Discard", .{})) {

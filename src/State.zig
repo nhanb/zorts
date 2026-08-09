@@ -36,8 +36,12 @@ pub fn BoundedString(comptime capacity: usize) type {
             return string;
         }
 
-        pub fn slice(self: *Self) []u8 {
+        pub fn slice(self: *const Self) []const u8 {
             return self.buf[0..self.len];
+        }
+
+        pub fn jsonStringify(self: *const Self, jw: anytype) !void {
+            try jw.write(self.slice());
         }
     };
 }
