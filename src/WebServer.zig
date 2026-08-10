@@ -11,9 +11,10 @@ pub const PORT = 1337;
 
 gpa: std.mem.Allocator,
 io: Io,
-server: net.Server,
-state: *State,
-thread: std.Thread,
+tcp_server: net.Server,
+server_thread: std.Thread,
+shutting_down: bool = false,
+state: *State, // TODO: probably need a lock on this?
 
 pub fn init(gpa: std.mem.Allocator, io: Io, state: *State) !*Self {
     var self = try gpa.create(Self);
@@ -28,46 +29,35 @@ pub fn init(gpa: std.mem.Allocator, io: Io, state: *State) !*Self {
         },
     };
 
-    self.server = try address.listen(io, .{ .reuse_address = true });
-    log.debug("Starting webserver at http://localhost:{d}", .{address.getPort()});
+    self.tcp_server = try address.listen(io, .{ .reuse_address = true });
 
-    //self.thread = try io.concurrent(startServer, .{self});
-    self.thread = try .spawn(.{}, startServer, .{self});
+    log.info("WebServer starting at http://localhost:{d}", .{address.getPort()});
+    self.server_thread = try .spawn(.{}, startServer, .{self});
 
     return self;
 }
 
 pub fn deinit(self: *Self) void {
-    //self.thread.join();
-    self.server.deinit(self.io);
+    self.shutting_down = true;
+    var stream = self.tcp_server.socket.address.connect(self.io, .{ .mode = .stream }) catch
+        @panic("WebServer shutdown failure");
+    stream.close(self.io);
+    self.server_thread.join();
+    self.tcp_server.deinit(self.io);
     self.gpa.destroy(self);
-    log.info("WebServer deinit", .{});
+    log.info("WebServer shut down gracefully.", .{});
 }
 
 fn startServer(self: *Self) !void {
-    while (true) {
-        log.info("before accept...", .{});
-        const stream = self.server.accept(self.io) catch |err| {
-            switch (err) {
-                error.Canceled => {
-                    log.debug("WebServer canceled.", .{});
-                    return;
-                },
-                else => return err,
-            }
-        };
+    while (!self.shutting_down) {
+        const stream = self.tcp_server.accept(self.io) catch |err| return err;
         // TODO: how should I await this thing?
-        log.info("before handleStream...", .{});
         _ = self.io.async(handleStream, .{ self, stream });
     }
+    log.info("WebServer shutting down...", .{});
 }
 
 fn handleStream(self: *Self, stream: net.Stream) !void {
-    var arena = std.heap.ArenaAllocator.init(self.gpa);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-    _ = allocator; // TODO: use this for per-request allocations
-
     var recv_buf: [4096]u8 = undefined;
     var send_buf: [4096]u8 = undefined;
     var reader = stream.reader(self.io, &recv_buf);
@@ -76,10 +66,8 @@ fn handleStream(self: *Self, stream: net.Stream) !void {
 
     // Handle keep-alive: serve multiple requests per connection
     while (http.reader.state == .ready) {
-        log.debug("before checkCancel", .{});
         try self.io.checkCancel();
 
-        log.debug("before receiveHead", .{});
         var request = http.receiveHead() catch |err| switch (err) {
             error.HttpConnectionClosing => return,
             else => {
