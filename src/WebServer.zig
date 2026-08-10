@@ -14,13 +14,20 @@ io: Io,
 tcp_server: net.Server,
 server_thread: std.Thread,
 shutting_down: bool = false,
-state: *State, // TODO: probably need a lock on this?
+state: *State,
+state_mutex: *Io.Mutex,
 
-pub fn init(gpa: std.mem.Allocator, io: Io, state: *State) !*Self {
+pub fn init(
+    gpa: std.mem.Allocator,
+    io: Io,
+    state: *State,
+    state_mutex: *Io.Mutex,
+) !*Self {
     var self = try gpa.create(Self);
     self.gpa = gpa;
     self.io = io;
     self.state = state;
+    self.state_mutex = state_mutex;
 
     const address: net.IpAddress = .{
         .ip4 = .{
@@ -83,17 +90,26 @@ fn handleStream(self: *Self, stream: net.Stream) !void {
 }
 
 fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
+    const io = self.io;
     const path = request.head.target;
 
     if (mem.eql(u8, path, "/")) {
         try request.respond("heeeyo", .{});
     } else if (mem.eql(u8, path, "/state.json")) {
         var buf: [4096]u8 = undefined;
-        const body = try std.fmt.bufPrint(
-            &buf,
-            "{f}",
-            .{std.json.fmt(self.state, .{})},
-        );
+        var body: []u8 = "";
+
+        {
+            try self.state_mutex.lock(io);
+            defer self.state_mutex.unlock(io);
+
+            body = try std.fmt.bufPrint(
+                &buf,
+                "{f}",
+                .{std.json.fmt(self.state, .{})},
+            );
+        }
+
         try request.respond(body, .{
             .extra_headers = &.{
                 .{ .name = "content-type", .value = "application/json" },

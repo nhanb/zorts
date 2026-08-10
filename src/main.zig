@@ -59,7 +59,15 @@ var state: State = .{
         .score = 1,
     },
 };
+
+/// applied_state is accessed in 3 ways:
+/// 1. "Apply" button:     WRITE from main thread
+/// 2. Text entry widgets: READ from main thread
+/// 3. Web server:         READ from web server thread
+/// We only need to use the mutex on 1 & 3,
+/// because 2 never happens concurrently with 1.
 var applied_state = State{};
+var applied_state_mutex: std.Io.Mutex = .init;
 
 var threaded_io: std.Io.Threaded = undefined;
 var web_server: *WebServer = undefined;
@@ -72,7 +80,12 @@ pub fn appInit(win: *dvui.Window) !void {
     state.player2.name = .init("Shirayuki-sama");
 
     threaded_io = .init(gpa, .{});
-    web_server = try .init(gpa, threaded_io.io(), &applied_state);
+    web_server = try .init(
+        gpa,
+        threaded_io.io(),
+        &applied_state,
+        &applied_state_mutex,
+    );
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -265,6 +278,9 @@ pub fn content() ?dvui.App.Result {
                     defer buttons_hbox.deinit();
 
                     if (widgets.button(@src(), "Apply", .{})) {
+                        const io = threaded_io.io();
+                        applied_state_mutex.lock(io) catch @panic("failed to acquire lock on applied_state");
+                        defer applied_state_mutex.unlock(io);
                         applied_state = state;
                     }
 
