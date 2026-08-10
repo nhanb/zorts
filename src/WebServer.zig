@@ -11,11 +11,11 @@ pub const PORT = 1337;
 
 gpa: std.mem.Allocator,
 io: Io,
-tcp_server: net.Server,
-server_thread: std.Thread,
-shutting_down: bool = false,
 state: *State,
 state_mutex: *Io.Mutex,
+shutting_down: bool,
+tcp_server: net.Server,
+server_thread: std.Thread,
 
 pub fn init(
     gpa: std.mem.Allocator,
@@ -28,6 +28,7 @@ pub fn init(
     self.io = io;
     self.state = state;
     self.state_mutex = state_mutex;
+    self.shutting_down = false;
 
     const address: net.IpAddress = .{
         .ip4 = .{
