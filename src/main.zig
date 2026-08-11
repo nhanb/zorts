@@ -18,9 +18,9 @@ var theme: dvui.Theme = dvui.Theme.builtin.adwaita_light;
 pub const dvui_app: dvui.App = .{
     .config = .{
         .options = .{
-            .size = .{ .w = 500, .h = 400 },
+            .size = .{ .w = 500, .h = 380 },
             .min_size = .{ .w = 500, .h = 380 },
-            .title = "Overly Repetitive Tedius Software (in Zig)",
+            .title = "Overly Repetitive Tedius Software",
             //.icon = window_icon_png,
             .window_init_options = .{
                 // Could set a default theme here
