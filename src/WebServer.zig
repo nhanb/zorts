@@ -3,11 +3,13 @@ const Io = std.Io;
 const net = std.Io.net;
 const mem = std.mem;
 const log = std.log;
+const fmt = std.fmt;
 const State = @import("./State.zig");
 
 const Self = @This();
 
 pub const PORT = 1337;
+pub const WEB_DIR = "web";
 
 gpa: std.mem.Allocator,
 io: Io,
@@ -94,9 +96,7 @@ fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
     const io = self.io;
     const path = request.head.target;
 
-    if (mem.eql(u8, path, "/")) {
-        try request.respond("heeeyo", .{});
-    } else if (mem.eql(u8, path, "/state.json")) {
+    if (mem.eql(u8, path, "/state.json")) {
         var buf: [4096]u8 = undefined;
         var body: []u8 = "";
 
@@ -104,7 +104,7 @@ fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
             try self.state_mutex.lock(io);
             defer self.state_mutex.unlock(io);
 
-            body = try std.fmt.bufPrint(
+            body = try fmt.bufPrint(
                 &buf,
                 "{f}",
                 .{std.json.fmt(self.state, .{})},
@@ -117,6 +117,41 @@ fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
             },
         });
     } else {
-        try request.respond("nothing to see here", .{ .status = .not_found });
+        try self.serveFile(request);
     }
+}
+
+/// Tries to serve static file at given path. Responds with 404 if not found.
+fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
+    const io = self.io;
+    var path = request.head.target;
+
+    if (!mem.startsWith(u8, path, "/")) {
+        try request.respond("Malformed path.", .{ .status = .bad_request });
+        return;
+    }
+
+    if (mem.eql(u8, path, "/")) {
+        path = "index.html";
+    } else {
+        path = path["/".len..];
+    }
+    log.info("WebServer serving path: {s}", .{path});
+
+    // TODO: unescape/sanitize path?
+
+    var arena_impl = std.heap.ArenaAllocator.init(self.gpa);
+    defer arena_impl.deinit();
+    const arena = arena_impl.allocator();
+
+    const dir = try Io.Dir.cwd().openDir(io, WEB_DIR, .{});
+    const blob = dir.readFileAlloc(io, path, arena, .unlimited) catch |err| switch (err) {
+        error.FileNotFound => {
+            try request.respond("Not found.", .{ .status = .not_found });
+            return;
+        },
+        else => return err,
+    };
+
+    try request.respond(blob, .{});
 }
