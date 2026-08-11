@@ -315,12 +315,13 @@ pub fn content() ?dvui.App.Result {
                         .{},
                         .{},
                     );
+                    const url = std.fmt.comptimePrint(
+                        "http://localhost:{d}/",
+                        .{WebServer.PORT},
+                    );
                     dvui.link(
                         @src(),
-                        .{
-                            .label = "http://localhost:1337",
-                            .url = "http://localhost:1337",
-                        },
+                        .{ .label = url, .url = url },
                         .{ .margin = .{ .x = -6 } },
                     );
                 }
