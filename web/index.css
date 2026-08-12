@@ -1,0 +1,124 @@
+body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  font-family: "Jura";
+  font-weight: 700;
+}
+
+#scoreboard {
+  text-align: center;
+  position: relative;
+}
+
+#p1score,
+#p2score,
+#p1name,
+#p2name,
+#p1country,
+#p2country,
+#p1team,
+#p2team,
+#description,
+#subtitle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  color: white;
+  text-transform: uppercase;
+}
+
+#p1team,
+#p2team {
+  font-size: 32px;
+  text-shadow: 0px 0px 20px black;
+}
+
+#description {
+  left: 0;
+  right: 0;
+  top: 3px;
+  text-transform: uppercase;
+  font-size: 20px;
+}
+
+#subtitle {
+  text-align: center;
+  left: 0;
+  right: 0;
+  top: 178px;
+  font-size: 20px;
+}
+
+#p1country,
+#p2country {
+  /*
+  font-family: "Noto Color Emoji";
+  font-size: 1.8em;
+  top: 8px;
+  */
+  font-family: "Twemoji Mozilla";
+  font-size: 2.2em;
+  top: 8px;
+}
+
+#p1country {
+  left: 317px;
+}
+
+#p2country {
+  right: 317px;
+}
+
+#p1score,
+#p2score {
+  top: -5px;
+  font-size: 56px;
+  width: 2em;
+  text-align: center;
+}
+
+#p1score {
+  left: 226px;
+}
+
+#p2score {
+  right: 226px;
+}
+
+#p1name,
+#p2name {
+  top: 8px;
+  font-size: 32px;
+}
+
+#p1name {
+  left: 360px;
+}
+
+#p2name {
+  right: 360px;
+}
+
+#p1team {
+  top: 182px;
+  left: 153px;
+}
+
+#p2team {
+  top: 182px;
+  right: 153px;
+}
+
+#logo {
+  display: block;
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
