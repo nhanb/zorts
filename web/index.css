@@ -22,7 +22,7 @@ body {
 #p2country,
 #p1team,
 #p2team,
-#description,
+#title,
 #subtitle {
   position: absolute;
   top: 0;
@@ -37,7 +37,7 @@ body {
   text-shadow: 0px 0px 20px black;
 }
 
-#description {
+#title {
   left: 0;
   right: 0;
   top: 3px;
@@ -51,6 +51,9 @@ body {
   right: 0;
   top: 178px;
   font-size: 20px;
+}
+#subtitle:empty {
+  display: none;
 }
 
 #p1country,

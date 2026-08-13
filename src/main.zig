@@ -45,7 +45,7 @@ const gpa = gpa_instance.allocator();
 
 var state: State = .{
     .title = .init("Saigon Cup 2026"),
-    .subtitle = .init("Winners Finals"),
+    .subtitle = .init("FT10"),
     .player1 = .{
         .team = .init("Team 1"),
         .country = .init("vn"),

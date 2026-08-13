@@ -77,6 +77,18 @@ const fetchInit = {
 const pollState = () => {
   fetch("state.json", fetchInit)
     .then((response) => response.json())
+    .then((resp) => ({
+      title: resp.title,
+      subtitle: resp.subtitle,
+      p1name: resp.player1.name,
+      p1team: resp.player1.team,
+      p1score: resp.player1.score,
+      p1country: resp.player1.country,
+      p2name: resp.player2.name,
+      p2team: resp.player2.team,
+      p2score: resp.player2.score,
+      p2country: resp.player2.country,
+    }))
     .then(applyNewState);
 };
 
