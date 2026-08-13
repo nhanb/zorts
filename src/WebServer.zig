@@ -126,6 +126,10 @@ fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
     const io = self.io;
     var path = request.head.target;
 
+    if (path.len == 0) {
+        path = "/";
+    }
+
     if (!mem.startsWith(u8, path, "/")) {
         try request.respond("Malformed path.", .{ .status = .bad_request });
         return;
