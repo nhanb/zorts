@@ -1,14 +1,26 @@
 ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
 UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
 
+DIST_WIN_DIR := dist/zorts-win64
+DIST_LINUX_DIR := dist/zorts-linux64
+
 default:
 	$(ZIG_BUILD) $(UNIX_OPTS)
 
 linux:
-	$(ZIG_BUILD) $(UNIX_OPTS) -Dtarget=x86_64-linux
+	$(ZIG_BUILD) $(UNIX_OPTS)
+	mkdir -p $(DIST_LINUX_DIR)
+	mv zig-out/bin/zorts $(DIST_LINUX_DIR)/
+	cp -r web $(DIST_LINUX_DIR)/
 
 windows:
 	$(ZIG_BUILD) -Dtarget=x86_64-windows
+	mkdir -p $(DIST_WIN_DIR)
+	mv zig-out/bin/zorts.exe $(DIST_WIN_DIR)/
+	cp -r web $(DIST_WIN_DIR)/
+
+clean:
+	rm -rf dist zig-out
 
 run:
 	zig build run $(UNIX_OPTS)
