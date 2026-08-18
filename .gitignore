@@ -1,4 +1,6 @@
 .zig-cache
 zig-out
 zig-pkg
-dist
+/dist
+/players.csv
+/creds*
