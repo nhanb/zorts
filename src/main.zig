@@ -23,7 +23,7 @@ pub const dvui_app: dvui.App = .{
         .options = .{
             .size = .{ .w = 500, .h = 380 },
             .min_size = .{ .w = 500, .h = 380 },
-            .title = "Overly Repetitive Tedius Software",
+            .title = "Overly Repetitive Tedious Software",
             //.icon = window_icon_png,
             .window_init_options = .{
                 // Could set a default theme here
