@@ -95,6 +95,13 @@ fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
     const io = self.io;
     const path = request.head.target;
 
+    if (request.head.method != .GET) {
+        try request.respond(
+            "We only serve GET requests.",
+            .{ .status = .method_not_allowed },
+        );
+    }
+
     if (mem.eql(u8, path, "/state.json")) {
         var buf: [4096]u8 = undefined;
         var body: []u8 = "";
