@@ -1,4 +1,7 @@
-ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
+# Zig windows build is broken with ReleaseSafe. Seems like a fix is already
+# in master but not in 0.16. Let's use Debug builds until 0.17 drops.
+# ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
+ZIG_BUILD := zig build -Doptimize=Debug -Dcpu=x86_64_v3
 UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
 
 DIST_WIN_DIR := dist/zorts-win64
