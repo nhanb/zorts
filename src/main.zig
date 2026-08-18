@@ -436,7 +436,7 @@ fn playerInputs(
 
                 if (sug.dropped()) {
                     for (player_lookup.slice()) |player_bio| {
-                        if (name_entry.textGet().len > 0 and !player_bio.matched) continue;
+                        if (!player_bio.matched) continue;
                         const name = player_bio.name.slice();
                         if (sug.addChoiceLabel(name)) {
                             name_entry.textSet(name, false);

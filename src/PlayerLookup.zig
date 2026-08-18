@@ -86,16 +86,7 @@ pub fn updateQuery(self: *PlayerLookup, query: []const u8) void {
                     self.query.slice(),
                 )
             else
-                false;
-
-        log.info(
-            ">> {s} ({s}), {any}",
-            .{
-                player.name.slice(),
-                player.normalized_name.slice(),
-                player.matched,
-            },
-        );
+                true;
     }
 }
 
