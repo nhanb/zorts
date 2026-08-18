@@ -20,6 +20,7 @@ windows:
 	$(ZIG_BUILD) -Dtarget=x86_64-windows
 	mkdir -p $(DIST_WIN_DIR)
 	mv zig-out/bin/zorts.exe $(DIST_WIN_DIR)/
+	mv zig-out/bin/zorts.pdb $(DIST_WIN_DIR)/
 	cp -r web $(DIST_WIN_DIR)/
 
 clean:
