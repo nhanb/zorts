@@ -416,7 +416,7 @@ fn playerInputs(
             // these things somehow.
             {
                 var name_entry: dvui.TextEntryWidget = undefined;
-                var opts: dvui.Options = .{ .id_extra = id };
+                var opts: dvui.Options = .{ .expand = .horizontal, .id_extra = id };
                 if (!std.mem.eql(u8, player.name.slice(), applied_player.name.slice())) {
                     opts.color_fill = widgets.DIFF_BG;
                 }
