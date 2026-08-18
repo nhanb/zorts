@@ -1,5 +1,7 @@
 const std = @import("std");
 const dvui = @import("dvui");
+const log = std.log.scoped(.State);
+const unicode = std.unicode;
 
 pub const MAX_TEXT_LENGTH = 64;
 
@@ -42,6 +44,51 @@ pub fn BoundedString(comptime capacity: usize) type {
 
         pub fn jsonStringify(self: *const Self, jw: anytype) !void {
             try jw.write(self.slice());
+        }
+
+        /// Removes whitespace, lowers case, removes Vietnamese diacritics.
+        /// Used for lookup.
+        pub fn normalized(self: *const Self) Self {
+            var result: Self = .{};
+
+            const original = self.slice();
+            var index: usize = 0;
+
+            var utf8 = unicode.Utf8View.init(original) catch |err| {
+                log.err("failed to read '{s}' as utf8: {any} - skipping normalization", .{ original, err });
+                return self.*;
+            };
+            var iterator = utf8.iterator();
+
+            while (iterator.nextCodepoint()) |codepoint| {
+                var cp = codepoint;
+
+                if (cp <= 127) {
+                    const char: u8 = @intCast(cp);
+                    // remove whitespace
+                    if (std.ascii.isWhitespace(char)) continue;
+                    // convert to lowercase
+                    cp = @intCast(std.ascii.toLower(char));
+                }
+
+                // remove Vietnamese diacritics
+                cp = switch (cp) {
+                    'a', 'à', 'á', 'ả', 'ã', 'ạ', 'ă', 'ằ', 'ắ', 'ẳ', 'ẵ', 'ặ', 'â', 'ầ', 'ấ', 'ẩ', 'ẫ', 'ậ' => 'a',
+                    'e', 'è', 'é', 'ẻ', 'ẽ', 'ẹ', 'ê', 'ề', 'ế', 'ể', 'ễ', 'ệ' => 'e',
+                    'i', 'ì', 'í', 'ỉ', 'ĩ', 'ị' => 'i',
+                    'o', 'ò', 'ó', 'ỏ', 'õ', 'ọ', 'ô', 'ồ', 'ố', 'ổ', 'ỗ', 'ộ', 'ơ', 'ờ', 'ớ', 'ở', 'ỡ', 'ợ' => 'o',
+                    'u', 'ù', 'ú', 'ủ', 'ũ', 'ụ', 'ư', 'ừ', 'ứ', 'ử', 'ữ', 'ự' => 'u',
+                    'y', 'ỳ', 'ý', 'ỷ', 'ỹ', 'ỵ' => 'y',
+                    'đ' => 'd',
+                    else => cp,
+                };
+
+                const bytes_written = unicode.utf8Encode(cp, result.buf[index..]) catch unreachable;
+                index += bytes_written;
+            }
+            result.len = index;
+
+            return result;
         }
     };
 }

@@ -5,7 +5,7 @@ const Options = dvui.Options;
 const TextEntryWidget = dvui.TextEntryWidget;
 const State = @import("./State.zig");
 
-const DIFF_BG = dvui.Color{ .r = 218, .g = 251, .b = 225 };
+pub const DIFF_BG = dvui.Color{ .r = 218, .g = 251, .b = 225 };
 
 const button_default_opts: Options = .{
     .border = .all(1),
@@ -24,7 +24,7 @@ pub fn textEntry(
     applied_text: []const u8,
     init_options: TextEntryWidget.InitOptions,
     options: Options,
-) void {
+) *TextEntryWidget {
     var init_opts = init_options;
     init_opts.text = .{ .buffer = &string_val.buf };
 
@@ -37,7 +37,8 @@ pub fn textEntry(
     if (entry.text_changed) {
         string_val.len = entry.len;
     }
-    entry.deinit();
+
+    return entry;
 }
 
 pub fn textEntryNumber(

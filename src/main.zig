@@ -5,6 +5,7 @@ const dvui = @import("dvui");
 const State = @import("./State.zig");
 const widgets = @import("./widgets.zig");
 const WebServer = @import("./WebServer.zig");
+const PlayerLookup = @import("./PlayerLookup.zig");
 
 const LABEL_WIDTH = 60;
 const DEFAULT_FONT_SIZE = 10;
@@ -72,13 +73,16 @@ var applied_state_mutex: std.Io.Mutex = .init;
 var threaded_io: std.Io.Threaded = undefined;
 var web_server: *WebServer = undefined;
 
+var player_lookup: PlayerLookup = undefined;
+
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
     applied_state = state;
     state.title = .init("Saigon Cup 2027");
-    state.player2.name = .init("Shirayuki-sama");
+    state.player2.name = .init("Shirayukisama");
 
+    // Init web server in another thread
     threaded_io = .init(gpa, .{});
     web_server = try .init(
         gpa,
@@ -86,6 +90,9 @@ pub fn appInit(win: *dvui.Window) !void {
         &applied_state,
         &applied_state_mutex,
     );
+
+    // Load player list from disk if file exists
+    player_lookup = try .initFromDisk(gpa, threaded_io.io());
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -114,6 +121,7 @@ pub fn appInit(win: *dvui.Window) !void {
 pub fn appDeinit(win: *dvui.Window) void {
     _ = win;
     web_server.deinit();
+    player_lookup.deinit(gpa);
 }
 
 // Run each frame to do normal UI
@@ -225,13 +233,14 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    widgets.textEntry(
+                    const title_entry = widgets.textEntry(
                         @src(),
                         &state.title,
                         applied_state.title.slice(),
                         .{},
                         .{ .expand = .horizontal },
                     );
+                    title_entry.deinit();
                 }
 
                 // Subtitle input
@@ -253,13 +262,14 @@ pub fn content() ?dvui.App.Result {
                             .min_size_content = .width(LABEL_WIDTH),
                         },
                     );
-                    widgets.textEntry(
+                    var subtitle_entry = widgets.textEntry(
                         @src(),
                         &state.subtitle,
                         applied_state.subtitle.slice(),
                         .{ .text = .{ .buffer = &state.subtitle.buf } },
                         .{ .expand = .horizontal },
                     );
+                    subtitle_entry.deinit();
                 }
 
                 // Player 1 inputs
@@ -378,22 +388,59 @@ fn playerInputs(
             );
 
             // Player name input
-            widgets.textEntry(
-                @src(),
-                &player.name,
-                applied_player.name.slice(),
-                .{ .placeholder = "Name e.g. Bonchan" },
-                .{ .expand = .horizontal, .id_extra = id },
-            );
+            // TODO: this one doesn't use widgets.textEntry() but wrangles
+            // dvui.TextEntryWidget directly to be able to setup suggestions.
+            // But then it has to duplicate widgets.textEntry()'s diff detection
+            // and BoundedString len synchronization. Not great. Try to refactor
+            // these things somehow.
+            {
+                var name_entry: dvui.TextEntryWidget = undefined;
+                var opts: dvui.Options = .{ .id_extra = id };
+                if (!std.mem.eql(u8, player.name.slice(), applied_player.name.slice())) {
+                    opts.color_fill = widgets.DIFF_BG;
+                }
+                name_entry.init(
+                    @src(),
+                    .{ .text = .{ .buffer = &player.name.buf } },
+                    opts,
+                );
+
+                var sug = dvui.suggestion(&name_entry, .{ .open_on_text_change = true });
+
+                // dvui.suggestion processes events so text entry should be updated
+                if (name_entry.text_changed) {
+                    player.name.len = name_entry.len;
+                    player_lookup.updateQuery(name_entry.getText());
+                }
+
+                if (sug.dropped()) {
+                    for (player_lookup.slice()) |player_bio| {
+                        if (name_entry.textGet().len > 0 and !player_bio.matched) continue;
+                        const name = player_bio.name.slice();
+                        if (sug.addChoiceLabel(name)) {
+                            name_entry.textSet(name, false);
+                            player.country = player_bio.country;
+                            player.team = player_bio.team;
+                            player_lookup.updateQuery(name_entry.getText());
+                            sug.close();
+                        }
+                    }
+                }
+                sug.deinit();
+
+                name_entry.draw();
+                name_entry.deinit();
+            }
 
             // Player country input
-            widgets.textEntry(
+            const country_input = widgets.textEntry(
                 @src(),
                 &player.country,
                 applied_player.country.slice(),
                 .{ .placeholder = "vn" },
                 .{ .max_size_content = .width(30), .id_extra = id },
             );
+            country_input.deinit();
 
             // Player score input
             widgets.textEntryNumber(@src(), &player.score, applied_player.score, id);
@@ -420,13 +467,14 @@ fn playerInputs(
             );
 
             // Player team input
-            widgets.textEntry(
+            const team_input = widgets.textEntry(
                 @src(),
                 &player.team,
                 applied_player.team.slice(),
                 .{},
                 .{ .expand = .horizontal, .id_extra = id },
             );
+            team_input.deinit();
         }
     }
 
