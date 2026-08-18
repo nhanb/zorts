@@ -12,6 +12,8 @@ const DEFAULT_FONT_SIZE = 10;
 
 var theme: dvui.Theme = dvui.Theme.builtin.adwaita_light;
 
+const ZORTS_APPLY = "zorts_apply";
+
 // To be a dvui App:
 // * declare "dvui_app"
 // * expose the backend's main function
@@ -100,6 +102,11 @@ pub fn appInit(win: *dvui.Window) !void {
         .dark => dvui.Theme.builtin.adwaita_dark,
     };
 
+    try win.keybinds.put(gpa, ZORTS_APPLY, switch (builtin.target.os.tag) {
+        .macos => .{ .command = true, .key = .enter },
+        else => .{ .control = true, .key = .enter },
+    });
+
     // Custom UI fonts:
     try dvui.addFont("Noto", @embedFile("fonts/noto-sans-v42-latin_vietnamese-regular.ttf"), null);
     try dvui.addFont("NotoItalic", @embedFile("fonts/noto-sans-v42-latin_vietnamese-italic.ttf"), null);
@@ -126,6 +133,23 @@ pub fn appDeinit(win: *dvui.Window) void {
 
 // Run each frame to do normal UI
 pub fn appFrame() !dvui.App.Result {
+
+    // Handle keyboard shortcuts
+    const evts = dvui.events();
+    for (evts) |*e| {
+        switch (e.evt) {
+            .key => |key| {
+                if (key.action == .down) {
+                    if (key.matchBind(ZORTS_APPLY)) {
+                        apply();
+                    }
+                }
+            },
+            else => {},
+        }
+    }
+
+    // Actual GUI
     {
         var scaler = dvui.scale(
             @src(),
@@ -288,10 +312,7 @@ pub fn content() ?dvui.App.Result {
                     defer buttons_hbox.deinit();
 
                     if (widgets.button(@src(), "Apply", .{})) {
-                        const io = threaded_io.io();
-                        applied_state_mutex.lock(io) catch @panic("failed to acquire lock on applied_state");
-                        defer applied_state_mutex.unlock(io);
-                        applied_state = state;
+                        apply();
                     }
 
                     if (widgets.button(@src(), "Discard", .{})) {
@@ -489,4 +510,11 @@ fn playerInputs(
     )) {
         player.score += 1;
     }
+}
+
+fn apply() void {
+    const io = threaded_io.io();
+    applied_state_mutex.lock(io) catch @panic("failed to acquire lock on applied_state");
+    defer applied_state_mutex.unlock(io);
+    applied_state = state;
 }
