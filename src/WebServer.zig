@@ -2,7 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 const net = std.Io.net;
 const mem = std.mem;
-const log = std.log;
+const log = std.log.scoped(.WebServer);
 const fmt = std.fmt;
 const State = @import("./State.zig");
 
@@ -38,10 +38,7 @@ pub fn init(
             .port = PORT,
         },
     };
-
     self.tcp_server = try address.listen(io, .{ .reuse_address = true });
-
-    log.info("WebServer starting at http://localhost:{d}", .{address.getPort()});
     self.server_thread = try .spawn(.{}, startServer, .{self});
 
     return self;
@@ -50,21 +47,23 @@ pub fn init(
 pub fn deinit(self: *Self) void {
     self.shutting_down = true;
     var stream = self.tcp_server.socket.address.connect(self.io, .{ .mode = .stream }) catch
-        @panic("WebServer shutdown failure");
+        @panic("shutdown failure");
     stream.close(self.io);
     self.server_thread.join();
     self.tcp_server.deinit(self.io);
     self.gpa.destroy(self);
-    log.info("WebServer shut down gracefully.", .{});
+    log.info("shut down gracefully.", .{});
 }
 
 fn startServer(self: *Self) !void {
+    log.info("starting at http://localhost:{d}", .{self.tcp_server.socket.address.getPort()});
+
     while (!self.shutting_down) {
         const stream = self.tcp_server.accept(self.io) catch |err| return err;
         // TODO: how should I await this thing?
         _ = self.io.async(handleStream, .{ self, stream });
     }
-    log.info("WebServer shutting down...", .{});
+    log.info("shutting down...", .{});
 }
 
 fn handleStream(self: *Self, stream: net.Stream) !void {
@@ -126,9 +125,7 @@ fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
     const io = self.io;
     var path = request.head.target;
 
-    if (path.len == 0) {
-        path = "/";
-    }
+    if (path.len == 0) path = "/";
 
     if (!mem.startsWith(u8, path, "/")) {
         try request.respond("Malformed path.", .{ .status = .bad_request });
@@ -140,7 +137,7 @@ fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
     } else {
         path = path["/".len..];
     }
-    log.info("WebServer serving path: {s}", .{path});
+    log.info("GET {s}", .{path});
 
     // TODO: unescape/sanitize path?
 
