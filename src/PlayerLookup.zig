@@ -27,6 +27,24 @@ pub const PlayerBio = struct {
     normalized_name: BoundedString(State.MAX_TEXT_LENGTH) = .{},
 };
 
+/// Tries to read player bios from csv file, falling back to an empty lookup
+/// table, effectively disabling autocompletion.
+pub fn init(gpa: Allocator, io: Io) PlayerLookup {
+    return initFromDisk(gpa, io) catch |err| blk: {
+        log.err(
+            "unexpected error while loading {s}: {any} => autocompletion is off",
+            .{ PLAYERS_FILE_NAME, err },
+        );
+        break :blk initEmpty(gpa);
+    };
+}
+
+pub fn initEmpty(gpa: Allocator) PlayerLookup {
+    return .{
+        .players = ArrayList(PlayerBio).initCapacity(gpa, 0) catch unreachable,
+    };
+}
+
 pub fn initFromDisk(gpa: Allocator, io: Io) !PlayerLookup {
     const file = Io.Dir.cwd().openFile(io, PLAYERS_FILE_NAME, .{}) catch |err| switch (err) {
         error.FileNotFound => {
@@ -48,13 +66,22 @@ pub fn initFromDisk(gpa: Allocator, io: Io) !PlayerLookup {
         if (line.len == 0 or mem.eql(u8, line, "\r")) continue;
         if (line[line.len - 1] == '\r') line = line[0 .. line.len - 1];
 
-        // TODO: handle escaping
-        // TODO: should I bother handling malformed files?
+        // TODO: handle escaping?
         var comma_iterator = mem.splitScalar(u8, line, ',');
+        const maybe_name = comma_iterator.next();
+        const maybe_country = comma_iterator.next();
+        const maybe_team = comma_iterator.next();
+        if (maybe_name == null or maybe_country == null or maybe_team == null) {
+            log.err("skipping invalid csv line: {s}", .{line});
+            continue;
+        }
+        // TODO: should I skip lines where values are too long, or should I
+        // truncate them? Right now we let the assert in BoundedString.init()
+        // crash the whole thing.
         var player = PlayerBio{
-            .name = .init(comma_iterator.next().?),
-            .country = .init(comma_iterator.next().?),
-            .team = .init(comma_iterator.next().?),
+            .name = .init(maybe_name.?),
+            .country = .init(maybe_country.?),
+            .team = .init(maybe_team.?),
         };
         player.normalized_name = player.name.normalized();
 

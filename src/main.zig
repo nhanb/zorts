@@ -94,7 +94,7 @@ pub fn appInit(win: *dvui.Window) !void {
     );
 
     // Load player list from disk if file exists
-    player_lookup = try .initFromDisk(gpa, threaded_io.io());
+    player_lookup = .init(gpa, threaded_io.io());
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
