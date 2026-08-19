@@ -1,5 +1,14 @@
 # Overly Repetitive Tedious Software (in Zig)
 
+![](propaganda/screenshot-main.webp)
+
+... is a rehash if [GORTS][1] but this time written
+in Zig using the excellent [dvui][2] instead of the ol' go-plus-tcl Frankenstein.
+
+Usage is pretty much the same as [GORTS][1], so for now please go there for
+more detailed instructions. I'll put proper documentation here once I'm done
+implementing start.gg support.
+
 Targets zig 0.16. See Makefile for useful commands.
 
 ## License
@@ -52,3 +61,7 @@ The following is its original license:
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+
+[1]: https://github.com/nhanb/gorts
+[2]: https://github.com/david-vanderson/dvui/
