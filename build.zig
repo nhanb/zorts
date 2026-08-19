@@ -25,17 +25,14 @@ pub fn build(b: *std.Build) void {
 
     switch (target.result.os.tag) {
         .windows => {
-            // TODO: For some reason, the dx11 doesn't correctly set the application icon
-            // in Windows, while sdl3 does, so that's what we're using here. This bloats
-            // the binary size considerably though. Investigate how to fix dx11.
             const dvui_dep = b.dependency("dvui", .{
                 .target = target,
                 .optimize = optimize,
-                .backend = .sdl3,
+                .backend = .dx11,
             });
-            exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl3"));
+            exe.root_module.addImport("dvui", dvui_dep.module("dvui_dx11"));
             // for zls:
-            exe.root_module.addImport("sdl-backend", dvui_dep.module("sdl3"));
+            exe.root_module.addImport("dx11-backend", dvui_dep.module("dx11"));
 
             // This manifest makes hidpi work
             exe.win32_manifest = dvui_dep.path("./src/main.manifest");

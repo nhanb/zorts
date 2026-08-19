@@ -44,7 +44,7 @@ Targets zig 0.16. See Makefile for useful commands.
 Backlog:
 
 - [ ] start.gg tournament player import
-- [ ] use dx11 backend instead of sdl to drastically reduce binary size
+- [x] use dx11 backend instead of sdl to drastically reduce binary size
       (currently blocked by dx11 backend code [not actually passing hIcon][4] -
       maybe try to fix it?)
 
