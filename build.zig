@@ -37,7 +37,7 @@ pub fn build(b: *std.Build) void {
             // This manifest makes hidpi work
             exe.win32_manifest = dvui_dep.path("./src/main.manifest");
             exe.subsystem = .Windows; // prevent console from showing
-            exe.root_module.addWin32ResourceFile(.{ .file = b.path("res/resource.rc") });
+            exe.root_module.addWin32ResourceFile(.{ .file = b.path("resource.rc") });
         },
         else => {
             const dvui_dep = b.dependency("dvui", .{
