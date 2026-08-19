@@ -2,6 +2,8 @@
 
 ![](propaganda/screenshot-main.webp)
 
+![](propaganda/screenshot-gameplay.webp)
+
 ... is a rehash if [GORTS][1] but this time written
 in Zig using the excellent [dvui][2] instead of the ol' go-plus-tcl Frankenstein.
 
