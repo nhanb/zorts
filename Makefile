@@ -1,5 +1,6 @@
 # Zig windows build is broken with ReleaseSafe. Seems like a fix is already
 # in master but not in 0.16. Let's use Debug builds until 0.17 drops.
+# https://codeberg.org/ziglang/translate-c/issues/327
 # ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
 ZIG_BUILD := zig build -Doptimize=Debug -Dcpu=x86_64_v3
 UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
@@ -15,6 +16,8 @@ linux:
 	mkdir -p $(DIST_LINUX_DIR)
 	mv zig-out/bin/zorts $(DIST_LINUX_DIR)/
 	cp -r web $(DIST_LINUX_DIR)/
+	cd $(DIST_LINUX_DIR) && zip -r ../zorts-linux.zip .
+	rm -r "$(DIST_LINUX_DIR)"
 
 windows:
 	$(ZIG_BUILD) -Dtarget=x86_64-windows
@@ -22,10 +25,12 @@ windows:
 	mv zig-out/bin/zorts.exe $(DIST_WIN_DIR)/
 	mv zig-out/bin/zorts.pdb $(DIST_WIN_DIR)/
 	cp -r web $(DIST_WIN_DIR)/
+	cd $(DIST_WIN_DIR) && zip -r ../zorts-windows.zip .
+	rm -r "$(DIST_WIN_DIR)"
 
 clean:
 	rm -rf dist zig-out
-	rm state.json state-applied.json
+	rm -f state.json state-applied.json
 
 run:
 	zig build run $(UNIX_OPTS)

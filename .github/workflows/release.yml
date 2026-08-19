@@ -1,0 +1,37 @@
+name: ZORTS
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+
+      - name: Install deps
+        run: sudo apt-get install --no-install-recommends --no-install-suggests -y libsdl3-dev libfreetype-dev
+
+      - run: make windows
+      - run: make linux
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          path: |
+            dist/zorts-windows.zip
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          path: |
+            dist/zorts-linux.zip
+
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            dist/zorts-linux.zip
+            dist/zorts-windows.zip
