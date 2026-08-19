@@ -1,6 +1,9 @@
 name: ZORTS
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-26.04
