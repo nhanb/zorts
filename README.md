@@ -41,6 +41,13 @@ You can download from:
 
 Targets zig 0.16. See Makefile for useful commands.
 
+Backlog:
+
+- [ ] start.gg tournament player import
+- [ ] use dx11 backend instead of sdl to drastically reduce binary size
+      (currently blocked by dx11 backend code [not actually passing hIcon][4] -
+      maybe try to fix it?)
+
 ## How to use
 
 Just unzip then:
@@ -109,3 +116,4 @@ The following is its original license:
 [1]: https://github.com/nhanb/gorts
 [2]: https://github.com/david-vanderson/dvui/
 [3]: https://www.libreoffice.org/discover/calc/
+[4]: https://github.com/nhanb/dvui/blob/07baf098603b42cad44c2df30c58b01fc0c399d0/src/backends/dx11.zig#L1722
