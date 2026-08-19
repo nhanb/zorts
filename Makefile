@@ -16,6 +16,7 @@ linux:
 	mkdir -p $(DIST_LINUX_DIR)
 	mv zig-out/bin/zorts $(DIST_LINUX_DIR)/
 	cp -r web propaganda LICENSE README.md $(DIST_LINUX_DIR)/
+	cp players.sample.csv $(DIST_LINUX_DIR)/players.csv
 	cd $(DIST_LINUX_DIR) && zip -r ../zorts-linux.zip .
 	rm -r "$(DIST_LINUX_DIR)"
 
@@ -25,6 +26,7 @@ windows:
 	mv zig-out/bin/zorts.exe $(DIST_WIN_DIR)/
 	mv zig-out/bin/zorts.pdb $(DIST_WIN_DIR)/
 	cp -r web propaganda LICENSE README.md $(DIST_WIN_DIR)/
+	cp players.sample.csv $(DIST_WIN_DIR)/players.csv
 	cd $(DIST_WIN_DIR) && zip -r ../zorts-windows.zip .
 	rm -r "$(DIST_WIN_DIR)"
 
