@@ -1,6 +1,7 @@
 const std = @import("std");
 const State = @import("./State.zig");
-const BoundedString = State.BoundedString;
+const EntryString = State.EntryString;
+const CountryString = State.CountryString;
 const mem = std.mem;
 const Allocator = mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -15,16 +16,16 @@ const PlayerLookup = @This();
 // radix tree. It probably doesn't matter for us because our tournaments are...
 // not huge.
 players: ArrayList(PlayerBio),
-query: BoundedString(State.MAX_TEXT_LENGTH) = .{},
+query: EntryString = .{},
 
 pub const PlayerBio = struct {
-    name: BoundedString(State.MAX_TEXT_LENGTH),
-    country: BoundedString(2),
-    team: BoundedString(State.MAX_TEXT_LENGTH),
+    name: EntryString,
+    country: CountryString,
+    team: EntryString,
 
     // Stuff used for querying:
     matched: bool = false,
-    normalized_name: BoundedString(State.MAX_TEXT_LENGTH) = .{},
+    normalized_name: EntryString = .{},
 };
 
 /// Tries to read player bios from csv file, falling back to an empty lookup

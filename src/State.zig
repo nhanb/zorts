@@ -8,9 +8,12 @@ const json = std.json;
 
 pub const MAX_TEXT_LENGTH = 64;
 
+pub const EntryString = BoundedString(MAX_TEXT_LENGTH);
+pub const CountryString = BoundedString(2);
+
 active_tab: Tab = .Main,
-title: BoundedString(MAX_TEXT_LENGTH) = .{},
-subtitle: BoundedString(MAX_TEXT_LENGTH) = .{},
+title: EntryString = .{},
+subtitle: EntryString = .{},
 player1: PlayerState = .{},
 player2: PlayerState = .{},
 
@@ -66,10 +69,10 @@ pub fn saveFile(self: *State, io: Io, path: []const u8) !void {
 pub const Tab = enum { Main, @"start.gg" };
 
 pub const PlayerState = struct {
-    name: BoundedString(MAX_TEXT_LENGTH) = .{},
-    team: BoundedString(MAX_TEXT_LENGTH) = .{},
+    name: EntryString = .{},
+    team: EntryString = .{},
     score: usize = 0,
-    country: BoundedString(2) = .{}, // TODO: define an enum?
+    country: CountryString = .{}, // TODO: define an enum?
 };
 
 /// Basically the deceased BoundedArray API.

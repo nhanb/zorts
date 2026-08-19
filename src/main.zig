@@ -6,6 +6,7 @@ const State = @import("./State.zig");
 const widgets = @import("./widgets.zig");
 const WebServer = @import("./WebServer.zig");
 const PlayerLookup = @import("./PlayerLookup.zig");
+const Startgg = @import("./Startgg.zig");
 
 const LABEL_WIDTH = 60;
 const DEFAULT_FONT_SIZE = 10;
@@ -64,24 +65,30 @@ var threaded_io: std.Io.Threaded = undefined;
 var web_server: *WebServer = undefined;
 
 var player_lookup: PlayerLookup = undefined;
+var startgg: Startgg = undefined;
 
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
-    state = try State.loadFile(gpa, threaded_io.io(), STATE_FILE);
-    applied_state = try State.loadFile(gpa, threaded_io.io(), APPLIED_STATE_FILE);
+    threaded_io = .init(gpa, .{});
+    const io = threaded_io.io();
+
+    state = try State.loadFile(gpa, io, STATE_FILE);
+    applied_state = try State.loadFile(gpa, io, APPLIED_STATE_FILE);
 
     // Init web server in another thread
-    threaded_io = .init(gpa, .{});
     web_server = try .init(
         gpa,
-        threaded_io.io(),
+        io,
         &applied_state,
         &applied_state_mutex,
     );
 
     // Load player list from disk if file exists
-    player_lookup = .init(gpa, threaded_io.io());
+    player_lookup = .init(gpa, io);
+
+    // Load start.gg tab inputs if file exists
+    startgg = .loadFile(io);
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -114,10 +121,12 @@ pub fn appInit(win: *dvui.Window) !void {
 // Run as app is shutting down before dvui.Window.deinit()
 pub fn appDeinit(win: *dvui.Window) void {
     _ = win;
+    const io = threaded_io.io();
     web_server.deinit();
     player_lookup.deinit(gpa);
-    state.saveFile(threaded_io.io(), STATE_FILE) catch unreachable;
-    applied_state.saveFile(threaded_io.io(), APPLIED_STATE_FILE) catch unreachable;
+    state.saveFile(io, STATE_FILE) catch unreachable;
+    applied_state.saveFile(io, APPLIED_STATE_FILE) catch unreachable;
+    startgg.writeFile(io) catch unreachable;
 }
 
 // Run each frame to do normal UI
@@ -347,7 +356,65 @@ pub fn content() ?dvui.App.Result {
                 }
             },
             .@"start.gg" => {
-                dvui.label(@src(), "To be developed...", .{}, .{});
+                const WIDTH = 90;
+                {
+                    var hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer hbox.deinit();
+
+                    dvui.labelEx(
+                        @src(),
+                        "Tournament",
+                        .{},
+                        .{ .align_x = 1 },
+                        .{
+                            .gravity_y = 0.5,
+                            .min_size_content = .width(WIDTH),
+                        },
+                    );
+
+                    // Tournament slug input
+                    const tournament_slug_entry = widgets.textEntry(
+                        @src(),
+                        &startgg.tournament_slug,
+                        startgg.tournament_slug.slice(),
+                        .{},
+                        .{ .expand = .horizontal },
+                    );
+                    tournament_slug_entry.deinit();
+                }
+                {
+                    var hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer hbox.deinit();
+
+                    dvui.labelEx(
+                        @src(),
+                        "Token",
+                        .{},
+                        .{ .align_x = 1 },
+                        .{
+                            .gravity_y = 0.5,
+                            .min_size_content = .width(WIDTH),
+                        },
+                    );
+
+                    // Token input
+                    const token_entry = widgets.textEntry(
+                        @src(),
+                        &startgg.token,
+                        startgg.token.slice(),
+                        .{ .password_char = "*" },
+                        .{ .expand = .horizontal },
+                    );
+                    token_entry.deinit();
+                }
             },
         }
     }
