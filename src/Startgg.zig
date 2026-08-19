@@ -7,6 +7,9 @@ const log = std.log.scoped(.Startgg);
 
 pub const INPUTS_FILE = "startgg-inputs.txt";
 const DELIMITER = ':';
+const API_HOST = "api.start.gg";
+const API_PATH = "/gql/alpha";
+const API_URL = "https://api.start.gg/gql/alpha";
 
 const Self = @This();
 
@@ -47,4 +50,32 @@ pub fn writeFile(self: *Self, io: Io) !void {
     try writer.interface.writeAll(self.token.slice());
 
     try writer.flush();
+}
+
+pub fn importTournament(self: *Self, gpa: std.mem.Allocator, io: Io) !void {
+    var http_client: std.http.Client = .{ .allocator = gpa, .io = io };
+    defer http_client.deinit();
+
+    var resp_writer = Io.Writer.Allocating.init(gpa);
+    defer resp_writer.deinit();
+
+    var token_buf: [256]u8 = undefined;
+    const result = try http_client.fetch(.{
+        .method = .GET,
+        .location = .{ .url = API_URL },
+        .response_writer = &resp_writer.writer,
+        .extra_headers = &.{
+            .{ .name = "User-Agent", .value = "ZORTS/0.5" },
+            .{ .name = "Content-Type", .value = "application/json" },
+            .{ .name = "Authorization", .value = try std.fmt.bufPrint(
+                &token_buf,
+                "Bearer {s}",
+                .{self.token.slice()},
+            ) },
+        },
+    });
+    log.info(
+        "status: {d}, body: {s}",
+        .{ result.status, resp_writer.writer.buffered() },
+    );
 }

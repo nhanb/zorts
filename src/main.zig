@@ -415,6 +415,32 @@ pub fn content() ?dvui.App.Result {
                     );
                     token_entry.deinit();
                 }
+                {
+                    var hbox = dvui.box(
+                        @src(),
+                        .{ .dir = .horizontal },
+                        .{ .expand = .horizontal },
+                    );
+                    defer hbox.deinit();
+
+                    dvui.labelEx(
+                        @src(),
+                        "",
+                        .{},
+                        .{ .align_x = 1 },
+                        .{
+                            .gravity_y = 0.5,
+                            .min_size_content = .width(WIDTH),
+                        },
+                    );
+
+                    if (dvui.button(@src(), "Import", .{}, .{})) {
+                        // TODO don't freeze the UI during http request
+                        startgg.importTournament(gpa, threaded_io.io()) catch {
+                            // TODO show some error message or something
+                        };
+                    }
+                }
             },
         }
     }
