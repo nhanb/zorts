@@ -4,3 +4,4 @@ zig-pkg
 /dist
 /players.csv
 /creds*
+/state*.json

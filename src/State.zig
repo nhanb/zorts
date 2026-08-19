@@ -2,6 +2,8 @@ const std = @import("std");
 const dvui = @import("dvui");
 const log = std.log.scoped(.State);
 const unicode = std.unicode;
+const Io = std.Io;
+const json = std.json;
 
 pub const MAX_TEXT_LENGTH = 64;
 
@@ -10,6 +12,55 @@ title: BoundedString(MAX_TEXT_LENGTH) = .{},
 subtitle: BoundedString(MAX_TEXT_LENGTH) = .{},
 player1: PlayerState = .{},
 player2: PlayerState = .{},
+
+const State = @This();
+
+pub fn loadFile(gpa: std.mem.Allocator, io: Io, path: []const u8) !State {
+    var buf: [4096]u8 = undefined;
+    const json_slice = Io.Dir.cwd().readFile(io, path, &buf) catch |err| switch (err) {
+        error.FileNotFound => {
+            log.info("{s} file not found. Starting with empty state.", .{path});
+            return .{
+                .title = .init("Saigon Cup 2026"),
+                .subtitle = .init("FT10"),
+                .player1 = .{
+                    .team = .init("Team 1"),
+                    .country = .init("vn"),
+                    .name = .init("Nguyễn-san"),
+                    .score = 2,
+                },
+                .player2 = .{
+                    .team = .init("Team 2"),
+                    .country = .init("jp"),
+                    .name = .init("Shirayukisama"),
+                    .score = 1,
+                },
+            };
+        },
+        else => return err,
+    };
+
+    const parsed = try json.parseFromSlice(State, gpa, json_slice, .{});
+    defer parsed.deinit();
+
+    log.info("loading state from {s}", .{path});
+    return parsed.value;
+}
+
+pub fn saveFile(self: *State, io: Io, path: []const u8) !void {
+    var file = try Io.Dir.cwd().createFile(io, path, .{});
+    defer file.close(io);
+
+    var buf: [4096]u8 = undefined;
+    var writer = file.writer(io, &buf);
+
+    var stringify = json.Stringify{
+        .writer = &writer.interface,
+        .options = .{ .whitespace = .indent_2 },
+    };
+    try stringify.write(self);
+    try writer.flush();
+}
 
 pub const Tab = enum { Main, @"start.gg" };
 
@@ -44,6 +95,16 @@ pub fn BoundedString(comptime capacity: usize) type {
 
         pub fn jsonStringify(self: *const Self, jw: anytype) !void {
             try jw.write(self.slice());
+        }
+
+        pub fn jsonParse(gpa: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !Self {
+            _ = gpa;
+            _ = options;
+            const token = try source.next();
+            switch (token) {
+                .string => |str_slice| return .init(str_slice),
+                else => return error.UnexpectedToken,
+            }
         }
 
         /// Removes whitespace, lowers case, removes Vietnamese diacritics.

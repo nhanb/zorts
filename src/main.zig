@@ -10,6 +10,9 @@ const PlayerLookup = @import("./PlayerLookup.zig");
 const LABEL_WIDTH = 60;
 const DEFAULT_FONT_SIZE = 10;
 
+const STATE_FILE = "state.json";
+const APPLIED_STATE_FILE = "state-applied.json";
+
 var theme: dvui.Theme = dvui.Theme.builtin.adwaita_light;
 
 const ZORTS_APPLY = "zorts_apply";
@@ -46,22 +49,7 @@ pub const std_options: std.Options = .{
 var gpa_instance = std.heap.DebugAllocator(.{}){};
 const gpa = gpa_instance.allocator();
 
-var state: State = .{
-    .title = .init("Saigon Cup 2026"),
-    .subtitle = .init("FT10"),
-    .player1 = .{
-        .team = .init("Team 1"),
-        .country = .init("vn"),
-        .name = .init("Nguyễn-san"),
-        .score = 2,
-    },
-    .player2 = .{
-        .team = .init("Team 2"),
-        .country = .init("jp"),
-        .name = .init("Diego"),
-        .score = 1,
-    },
-};
+var state: State = .{};
 
 /// applied_state is accessed in 3 ways:
 /// 1. "Apply" button:     WRITE from main thread
@@ -80,9 +68,8 @@ var player_lookup: PlayerLookup = undefined;
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
-    applied_state = state;
-    state.title = .init("Saigon Cup 2027");
-    state.player2.name = .init("Shirayukisama");
+    state = try State.loadFile(gpa, threaded_io.io(), STATE_FILE);
+    applied_state = try State.loadFile(gpa, threaded_io.io(), APPLIED_STATE_FILE);
 
     // Init web server in another thread
     threaded_io = .init(gpa, .{});
@@ -129,6 +116,8 @@ pub fn appDeinit(win: *dvui.Window) void {
     _ = win;
     web_server.deinit();
     player_lookup.deinit(gpa);
+    state.saveFile(threaded_io.io(), STATE_FILE) catch unreachable;
+    applied_state.saveFile(threaded_io.io(), APPLIED_STATE_FILE) catch unreachable;
 }
 
 // Run each frame to do normal UI

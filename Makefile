@@ -25,6 +25,7 @@ windows:
 
 clean:
 	rm -rf dist zig-out
+	rm state.json state-applied.json
 
 run:
 	zig build run $(UNIX_OPTS)
