@@ -2,6 +2,7 @@ const std = @import("std");
 const dvui = @import("dvui");
 const log = std.log.scoped(.State);
 const unicode = std.unicode;
+const ascii = std.ascii;
 const Io = std.Io;
 const json = std.json;
 
@@ -107,7 +108,7 @@ pub fn BoundedString(comptime capacity: usize) type {
             }
         }
 
-        /// Removes whitespace, lowers case, removes Vietnamese diacritics.
+        /// Removes special chars, lowers case, removes Vietnamese diacritics.
         /// Used for lookup.
         pub fn normalized(self: *const Self) Self {
             var result: Self = .{};
@@ -126,13 +127,14 @@ pub fn BoundedString(comptime capacity: usize) type {
 
                 if (cp <= 127) {
                     const char: u8 = @intCast(cp);
-                    // remove whitespace
-                    if (std.ascii.isWhitespace(char)) continue;
-                    // convert to lowercase
-                    cp = @intCast(std.ascii.toLower(char));
+                    // if the character is within ASCII range,
+                    // we only care about alphanumeric chars:
+                    if (!ascii.isAlphanumeric(char)) continue;
+                    // lowercase:
+                    cp = @intCast(ascii.toLower(char));
                 }
 
-                // remove Vietnamese diacritics
+                // remove Vietnamese diacritics:
                 cp = switch (cp) {
                     'a', 'à', 'á', 'ả', 'ã', 'ạ', 'ă', 'ằ', 'ắ', 'ẳ', 'ẵ', 'ặ', 'â', 'ầ', 'ấ', 'ẩ', 'ẫ', 'ậ' => 'a',
                     'e', 'è', 'é', 'ẻ', 'ẽ', 'ẹ', 'ê', 'ề', 'ế', 'ể', 'ễ', 'ệ' => 'e',

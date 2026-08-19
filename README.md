@@ -24,8 +24,8 @@ but has a bunch of opinionated quality-of-life improvements:
   can then be updated manually using any (decent) spreadsheet editor.
   Importing from start.gg will be implemented soon.
 
-- **Flexible player name suggestion as you type**: unlike StreamControl, you
-  don't need to care about whitespaces.
+- **Flexible player name suggestion as you type**: unlike StreamControl, the
+  suggestion logic case, whitespaces, punctuations, or any special character.
 
 - **Cross-platform**: Runs on Windows & Linux. macOS support is unplanned but
   if you really need it, I'm open to contract work.
