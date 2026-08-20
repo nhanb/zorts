@@ -86,7 +86,10 @@ pub fn BoundedString(comptime capacity: usize) type {
         len: usize = 0,
 
         pub fn init(init_text: []const u8) Self {
-            std.debug.assert(init_text.len <= capacity);
+            if (init_text.len > capacity) {
+                log.err("String '{s}' is too long.", .{init_text});
+                @panic("String too long.");
+            }
 
             var string: Self = .{ .len = init_text.len };
             @memcpy(string.buf[0..init_text.len], init_text);

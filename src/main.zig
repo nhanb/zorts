@@ -436,8 +436,9 @@ pub fn content() ?dvui.App.Result {
 
                     if (widgets.button(@src(), "Import", .{})) {
                         // TODO don't freeze the UI during http request
-                        startgg.importTournament(gpa, threaded_io.io()) catch {
+                        startgg.importTournament(gpa, threaded_io.io(), &player_lookup) catch |err| {
                             // TODO show some error message or something
+                            log.err("importTournament error: {any}", .{err});
                         };
                     }
                 }
