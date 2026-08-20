@@ -356,7 +356,7 @@ pub fn content() ?dvui.App.Result {
                 }
             },
             .@"start.gg" => {
-                const WIDTH = 90;
+                const STARTGG_LABEL_WIDTH = 90;
                 {
                     var hbox = dvui.box(
                         @src(),
@@ -372,7 +372,7 @@ pub fn content() ?dvui.App.Result {
                         .{ .align_x = 1 },
                         .{
                             .gravity_y = 0.5,
-                            .min_size_content = .width(WIDTH),
+                            .min_size_content = .width(STARTGG_LABEL_WIDTH),
                         },
                     );
 
@@ -401,7 +401,7 @@ pub fn content() ?dvui.App.Result {
                         .{ .align_x = 1 },
                         .{
                             .gravity_y = 0.5,
-                            .min_size_content = .width(WIDTH),
+                            .min_size_content = .width(STARTGG_LABEL_WIDTH),
                         },
                     );
 
@@ -430,11 +430,11 @@ pub fn content() ?dvui.App.Result {
                         .{ .align_x = 1 },
                         .{
                             .gravity_y = 0.5,
-                            .min_size_content = .width(WIDTH),
+                            .min_size_content = .width(STARTGG_LABEL_WIDTH),
                         },
                     );
 
-                    if (dvui.button(@src(), "Import", .{}, .{})) {
+                    if (widgets.button(@src(), "Import", .{})) {
                         // TODO don't freeze the UI during http request
                         startgg.importTournament(gpa, threaded_io.io()) catch {
                             // TODO show some error message or something
@@ -522,6 +522,7 @@ fn playerInputs(
                         const name = player_bio.name.slice();
                         if (sug.addChoiceLabel(name)) {
                             name_entry.textSet(name, false);
+                            player.name = player_bio.name;
                             player.country = player_bio.country;
                             player.team = player_bio.team;
                             player_lookup.updateQuery(name_entry.getText());
