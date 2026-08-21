@@ -58,7 +58,7 @@ pub fn importTournament(
     gpa: std.mem.Allocator,
     io: Io,
     player_lookup: *PlayerLookup,
-) !void {
+) !usize {
     var query_buf: [1024]u8 = undefined;
     var query_writer = Io.Writer.fixed(&query_buf);
     try query_writer.writeAll(
@@ -148,49 +148,42 @@ pub fn importTournament(
         .response_writer = &resp_writer.writer,
     });
 
-    const end = std.Io.Clock.now(.awake, io);
-    const duration = start.durationTo(end);
-
     const response = resp_writer.writer.buffered();
 
-    log.info("{s}", .{response});
+    //try Io.Dir.cwd().writeFile(io, .{ .sub_path = "resp.json", .data = response });
 
+    const end = std.Io.Clock.now(.awake, io);
+    const duration = start.durationTo(end);
     log.info(
         "got status: {d}, body: {d} bytes, took {d}s",
         .{ result.status, response.len, duration.toSeconds() },
     );
 
-    var parsed = try std.json.parseFromSlice(
+    var parsed = std.json.parseFromSlice(
         ResponseBody,
         gpa,
         response,
         .{ .ignore_unknown_fields = true },
-    );
-    defer parsed.deinit();
-
-    var buf: [4096]u8 = undefined;
-    var writer = Io.Writer.fixed(&buf);
-    var stringify = std.json.Stringify{
-        .writer = &writer,
-        .options = .{ .whitespace = .indent_2 },
+    ) catch |err| {
+        log.err("JSON parse error: {any}", .{err});
+        @panic("Failed to parse response json");
     };
-    try stringify.write(parsed.value);
-    log.info("resp body:\n{s}", .{writer.buffered()});
+    defer parsed.deinit();
 
     player_lookup.players.clearRetainingCapacity();
     for (parsed.value.data.tournament.participants.nodes) |node| {
         const name = node.gamerTag;
-        const prefix = node.prefix;
-        const country_name = node.user.location.country;
+        const prefix = if (node.prefix) |pre| pre else "";
+
+        var country_code: []const u8 = "";
+        if (node.user.location.country) |country_name| {
+            if (country_name_to_code.get(country_name)) |code| {
+                country_code = code;
+            }
+        }
 
         // TODO how should I handle multiple teams?
         const team = if (node.entrants[0].team) |team| team.name else "";
-
-        const country_code =
-            if (country_name_to_code.get(country_name)) |code|
-                code
-            else
-                "";
 
         var name_buf: [MAX_TEXT_LENGTH]u8 = undefined;
         const player_name =
@@ -207,6 +200,8 @@ pub fn importTournament(
         player_bio.normalized_name = player_bio.name.normalized();
         try player_lookup.players.append(gpa, player_bio);
     }
+
+    return player_lookup.players.items.len;
 }
 
 const RequestBody = struct {
@@ -224,10 +219,10 @@ const ResponseBody = struct {
                         },
                     },
                     gamerTag: []const u8,
-                    prefix: []const u8,
+                    prefix: ?[]const u8,
                     user: struct {
                         location: struct {
-                            country: []const u8,
+                            country: ?[]const u8,
                         },
                     },
                 },

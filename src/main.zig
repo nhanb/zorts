@@ -92,8 +92,18 @@ pub fn appInit(win: *dvui.Window) !void {
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
-        .light => dvui.Theme.builtin.adwaita_light,
-        .dark => dvui.Theme.builtin.adwaita_dark,
+        .light => blk: {
+            var t = dvui.Theme.builtin.adwaita_light;
+            // Diff background color:
+            t.app1.fill = dvui.Color{ .r = 218, .g = 251, .b = 225 };
+            break :blk t;
+        },
+        .dark => blk: {
+            var t = dvui.Theme.builtin.adwaita_dark;
+            // Diff background color:
+            t.app1.fill = dvui.Color{ .r = 0x20, .g = 0x47, .b = 0x0b };
+            break :blk t;
+        },
     };
 
     try win.keybinds.put(gpa, ZORTS_APPLY, switch (builtin.target.os.tag) {
@@ -434,12 +444,37 @@ pub fn content() ?dvui.App.Result {
                         },
                     );
 
-                    if (widgets.button(@src(), "Import", .{})) {
+                    if (widgets.button(@src(), "Import", .{})) player_import: {
                         // TODO don't freeze the UI during http request
-                        startgg.importTournament(gpa, threaded_io.io(), &player_lookup) catch |err| {
-                            // TODO show some error message or something
-                            log.err("importTournament error: {any}", .{err});
+                        const num_players = startgg.importTournament(
+                            gpa,
+                            threaded_io.io(),
+                            &player_lookup,
+                        ) catch |err| {
+                            var toast_buf: [1024]u8 = undefined;
+                            dvui.toast(
+                                @src(),
+                                .{
+                                    .message = std.fmt.bufPrint(
+                                        &toast_buf,
+                                        "start.gg import error: {any}",
+                                        .{err},
+                                    ) catch unreachable,
+                                },
+                            );
+                            break :player_import;
                         };
+                        var toast_buf: [64]u8 = undefined;
+                        dvui.toast(
+                            @src(),
+                            .{
+                                .message = std.fmt.bufPrint(
+                                    &toast_buf,
+                                    "{d} players imported.",
+                                    .{num_players},
+                                ) catch unreachable,
+                            },
+                        );
                     }
                 }
             },
@@ -501,7 +536,7 @@ fn playerInputs(
                 var name_entry: dvui.TextEntryWidget = undefined;
                 var opts: dvui.Options = .{ .expand = .horizontal, .id_extra = id };
                 if (!std.mem.eql(u8, player.name.slice(), applied_player.name.slice())) {
-                    opts.color_fill = widgets.DIFF_BG;
+                    opts.color_fill = dvui.themeGet().app1.fill;
                 }
                 name_entry.init(
                     @src(),
