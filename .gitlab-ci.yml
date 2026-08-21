@@ -17,6 +17,7 @@ build-linux-job:
     name: ZortsLinux
     paths:
       - dist/zorts-linux.zip
+    expire_in: 1 week
 
 build-windows-job:
   stage: build
@@ -26,6 +27,7 @@ build-windows-job:
     name: ZortsWindows
     paths:
       - dist/zorts-windows.zip
+    expire_in: 1 week
 
 release-job:
   stage: release
