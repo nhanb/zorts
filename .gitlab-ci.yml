@@ -1,0 +1,57 @@
+stages:
+  - build
+  - release
+
+default:
+  image: "archlinux:latest"
+  before_script:
+    - pacman -Syu --noconfirm make zig zip
+
+build-linux-job:
+  stage: build
+  script:
+    # need pkgconf or `zig build` won't be able to find freetype2 lib
+    - pacman -Syu --noconfirm pkgconf sdl3 freetype2 harfbuzz
+    - make linux
+  artifacts:
+    name: ZortsLinux
+    paths:
+      - dist/zorts-linux.zip
+
+build-windows-job:
+  stage: build
+  script:
+    - make windows
+  artifacts:
+    name: ZortsWindows
+    paths:
+      - dist/zorts-windows.zip
+
+release-job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  # Override the default before_script so pacman doesn't run on this Alpine-based image
+  before_script: []
+  needs:
+    - job: build-linux-job
+      artifacts: true
+    - job: build-windows-job
+      artifacts: true
+  rules:
+    # This ensures the job only runs when a git tag is pushed
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "Running release job for tag $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: "Automated release for $CI_COMMIT_TAG"
+    tag_name: "$CI_COMMIT_TAG"
+    assets:
+      links:
+        - name: "ZortsLinux (ZIP)"
+          link_type: "Downloads"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/zorts-linux.zip?job=build-linux-job"
+
+        - name: "ZortsWindows (ZIP)"
+          link_type: "Downloads"
+          url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/zorts-windows.zip?job=build-windows-job"

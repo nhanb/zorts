@@ -1,6 +1,7 @@
 # Overly Repetitive Tedious Software (in Zig)
 
 [![github status](https://github.com/nhanb/zorts/actions/workflows/release.yml/badge.svg)](https://github.com/nhanb/zorts/actions/workflows/release.yml)
+[![gitlab status](https://gitlab.com/nhanb/zorts/-/badges/release.svg)](https://gitlab.com/nhanb/zorts/-/pipelines?scope=tags)
 
 ZORTS is a simple scoreboard overlay for fighting games. The default design is
 compatible with Street Fighter 6, Tekken 8, KOF XV, and Guilty Gear Strive.
@@ -40,6 +41,7 @@ You can download the ready-to-use program from:
 
 - [GitHub](https://github.com/nhanb/zorts/releases/latest): download
   `zorts-windows.zip` or `zorts-linux.zip`.
+- [GitLab](https://gitlab.com/nhanb/zorts/-/releases)
 
 ## Development
 
