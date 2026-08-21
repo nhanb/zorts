@@ -2,15 +2,17 @@
 
 [![github status](https://github.com/nhanb/zorts/actions/workflows/release.yml/badge.svg)](https://github.com/nhanb/zorts/actions/workflows/release.yml)
 
-![](propaganda/screenshot-main.webp)
-
-![](propaganda/screenshot-gameplay.webp)
-
 ZORTS is a simple scoreboard overlay for fighting games. The default design is
 compatible with Street Fighter 6, Tekken 8, KOF XV, and Guilty Gear Strive.
 
-> It's also a rehash if [GORTS][1] but this time written
+> It's also a rehash of [GORTS][1] but this time written
 > in Zig using the excellent [dvui][2] instead of the ol' go-plus-tcl Frankenstein.
+
+![](propaganda/screenshot-main.webp)
+
+![](propaganda/screenshot-startgg-dark.webp)
+
+![](propaganda/screenshot-gameplay.webp)
 
 ## Features
 
@@ -20,19 +22,21 @@ but has a bunch of opinionated quality-of-life improvements:
 - **Visible diff & easy undo**: Changes not yet applied to stream are
   highlighted and can be discarded with the Discard button.
 
-- **Player name + country import**: Player data is saved as a csv file which
-  can then be updated manually using any (decent) spreadsheet editor.
-  Importing from start.gg will be implemented soon.
+- **Player name + country import**: Currently supports start.gg.
+  Player data is saved as a csv file which can then be updated manually using
+  any (decent) spreadsheet editor. See "How to use" section below.
 
 - **Flexible player name suggestion as you type**: unlike StreamControl, the
-  suggestion logic case, whitespaces, punctuations, or any special character.
+  suggestion logic ignores case, whitespaces, punctuations, or any special character.
 
 - **Cross-platform**: Runs on Windows & Linux. macOS support is unplanned but
   if you really need it, I'm open to contract work.
 
+- **Dark mode**, for those of you who like that sort of thing.
+
 ## Download
 
-You can download from:
+You can download the ready-to-use program from:
 
 - [GitHub](https://github.com/nhanb/zorts/releases/latest): download
   `zorts-windows.zip` or `zorts-linux.zip`.
@@ -43,8 +47,14 @@ Targets zig 0.16. See Makefile for useful commands.
 
 Backlog:
 
-- [ ] start.gg tournament player import
+- [x] start.gg tournament player import
 - [ ] build in ReleaseSafe mode instead of Debug once 0.17 drops ([context][5])
+
+There are multiple mirrors to pull from. Pick your poison:
+
+- https://github.com/nhanb/zorts
+- https://gitlab.com/nhanb/zorts
+- https://codeberg.org/nhanb/zorts
 
 ## How to use
 
