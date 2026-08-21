@@ -11,7 +11,6 @@ pub const MAX_TEXT_LENGTH = 64;
 pub const EntryString = BoundedString(MAX_TEXT_LENGTH);
 pub const CountryString = BoundedString(2);
 
-active_tab: Tab = .Main,
 title: EntryString = .{},
 subtitle: EntryString = .{},
 player1: PlayerState = .{},
@@ -44,7 +43,12 @@ pub fn loadFile(gpa: std.mem.Allocator, io: Io, path: []const u8) !State {
         else => return err,
     };
 
-    const parsed = try json.parseFromSlice(State, gpa, json_slice, .{});
+    const parsed = try json.parseFromSlice(
+        State,
+        gpa,
+        json_slice,
+        .{ .ignore_unknown_fields = true },
+    );
     defer parsed.deinit();
 
     log.info("loading state from {s}", .{path});
@@ -65,8 +69,6 @@ pub fn saveFile(self: *State, io: Io, path: []const u8) !void {
     try stringify.write(self);
     try writer.flush();
 }
-
-pub const Tab = enum { Main, @"start.gg" };
 
 pub const PlayerState = struct {
     name: EntryString = .{},

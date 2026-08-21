@@ -67,6 +67,10 @@ var web_server: *WebServer = undefined;
 var player_lookup: PlayerLookup = undefined;
 var startgg: Startgg = undefined;
 
+var active_tab: Tab = .Main;
+
+pub const Tab = enum { Main, @"start.gg" };
+
 // Runs before the first frame, after backend and dvui.Window.init()
 // - runs between win.begin()/win.end()
 pub fn appInit(win: *dvui.Window) !void {
@@ -196,8 +200,8 @@ pub fn content() ?dvui.App.Result {
         );
         defer tabs.deinit();
 
-        inline for (std.enums.values(State.Tab)) |tab| {
-            const active = state.active_tab == tab;
+        inline for (std.enums.values(Tab)) |tab| {
+            const active = active_tab == tab;
 
             const padding: dvui.Rect = .{
                 .x = 15,
@@ -226,7 +230,7 @@ pub fn content() ?dvui.App.Result {
                     .color_border = null,
                 },
             )) {
-                state.active_tab = tab;
+                active_tab = tab;
             }
         }
     }
@@ -244,7 +248,7 @@ pub fn content() ?dvui.App.Result {
         });
         defer tab_box.deinit();
 
-        switch (state.active_tab) {
+        switch (active_tab) {
             .Main => {
                 // Title input
                 {
