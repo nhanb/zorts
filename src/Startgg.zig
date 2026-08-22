@@ -19,7 +19,8 @@ token: EntryString = .{},
 pub fn loadFile(io: Io) Self {
     var buf: [4096]u8 = undefined;
     const slice = Io.Dir.cwd().readFile(io, INPUTS_FILE, &buf) catch return .{};
-    var parts = std.mem.splitScalar(u8, slice, DELIMITER);
+    const trimmed = std.mem.trimEnd(u8, slice, "\r\n");
+    var parts = std.mem.splitScalar(u8, trimmed, DELIMITER);
 
     const tournament_slug = parts.next();
     const token = parts.next();
