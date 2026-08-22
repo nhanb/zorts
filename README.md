@@ -40,23 +40,8 @@ but has a bunch of opinionated quality-of-life improvements:
 You can download the ready-to-use program from either of these (choose the
 latest release then download **zorts-windows.zip**):
 
-- [GitHub Releases](https://github.com/nhanb/zorts/releases/latest)
-- [GitLab Releases](https://gitlab.com/nhanb/zorts/-/releases)
-
-## Development
-
-Targets zig 0.16. See Makefile for useful commands.
-
-Backlog:
-
-- [x] start.gg tournament player import
-- [ ] build in ReleaseSafe mode instead of Debug once 0.17 drops ([context][5])
-
-There are multiple mirrors to pull from. Pick your poison:
-
-- https://github.com/nhanb/zorts
-- https://gitlab.com/nhanb/zorts
-- https://codeberg.org/nhanb/zorts
+- [Download from GitHub](https://github.com/nhanb/zorts/releases/latest)
+- [Download from GitLab](https://gitlab.com/nhanb/zorts/-/releases)
 
 ## How to use
 
@@ -70,6 +55,21 @@ Just unzip then:
   or [libreoffice calc][3])
 - If you want to customize the look, open up the **web** folder and go wild.
   You only need basic HTML/CSS/JS knowledge to work on it. No fancy frameworks.
+
+## Development
+
+There are multiple mirrors to pull from. Pick your poison:
+
+- https://github.com/nhanb/zorts
+- https://gitlab.com/nhanb/zorts
+- https://codeberg.org/nhanb/zorts
+
+Targets zig 0.16. See Makefile for useful commands.
+
+Backlog:
+
+- [x] start.gg tournament player import
+- [ ] build in ReleaseSafe mode instead of Debug once 0.17 drops ([context][5])
 
 ## License
 
