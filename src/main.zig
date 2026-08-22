@@ -468,6 +468,9 @@ pub fn content() ?dvui.App.Result {
                             );
                             break :player_import;
                         };
+
+                        player_lookup.saveToDisk(threaded_io.io()) catch unreachable;
+
                         var toast_buf: [64]u8 = undefined;
                         dvui.toast(
                             @src(),

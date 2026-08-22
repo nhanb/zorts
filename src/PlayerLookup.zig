@@ -125,3 +125,27 @@ pub fn len(self: *PlayerLookup) usize {
 pub fn slice(self: *PlayerLookup) []PlayerBio {
     return self.players.items;
 }
+
+pub fn saveToDisk(self: *PlayerLookup, io: Io) !void {
+    var file = try Io.Dir.cwd().createFile(io, PLAYERS_FILE_NAME, .{});
+    defer file.close(io);
+
+    var buf: [4096]u8 = undefined;
+    var writer = file.writer(io, &buf);
+
+    for (self.players.items) |player| {
+        // using Windows-style newline to make sure normal people can edit the
+        // file in any editor (e.g. notepad). Unix-like people probably use
+        // decent editors that work seamlessly with either style anyway.
+        try writer.interface.print("{s},{s},{s}\r\n", .{
+            player.name.slice(),
+            player.country.slice(),
+            player.team.slice(),
+        });
+    }
+    try writer.interface.flush();
+    log.info(
+        "saved {d} players to {s}",
+        .{ self.players.items.len, PLAYERS_FILE_NAME },
+    );
+}
