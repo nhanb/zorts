@@ -1,22 +1,24 @@
 const std = @import("std");
+const dvui = @import("dvui");
 const Io = std.Io;
 const State = @import("./State.zig");
 const EntryString = State.EntryString;
 const MAX_TEXT_LENGTH = State.MAX_TEXT_LENGTH;
 const log = std.log.scoped(.Startgg);
 const PlayerLookup = @import("./PlayerLookup.zig");
+const signals = @import("./signals.zig");
 
 pub const INPUTS_FILE = "startgg-inputs.txt";
 const DELIMITER = ':';
 const API_URL = "https://api.start.gg/gql/alpha";
 //const API_URL = "http://localhost:8080"; // python debugsrv.py
 
-const Self = @This();
+const Startgg = @This();
 
 tournament_slug: EntryString = .{},
 token: EntryString = .{},
 
-pub fn loadFile(io: Io) Self {
+pub fn loadFile(io: Io) Startgg {
     var buf: [4096]u8 = undefined;
     const slice = Io.Dir.cwd().readFile(io, INPUTS_FILE, &buf) catch return .{};
     const trimmed = std.mem.trimEnd(u8, slice, "\r\n");
@@ -40,7 +42,7 @@ pub fn loadFile(io: Io) Self {
     };
 }
 
-pub fn writeFile(self: *Self, io: Io) !void {
+pub fn writeFile(self: *Startgg, io: Io) !void {
     const file = try Io.Dir.cwd().createFile(io, INPUTS_FILE, .{});
     defer file.close(io);
 
@@ -54,12 +56,17 @@ pub fn writeFile(self: *Self, io: Io) !void {
     try writer.flush();
 }
 
-pub fn importTournament(
-    self: *Self,
+/// Executed in a background thread
+pub fn send_request(
+    self: *Startgg,
     gpa: std.mem.Allocator,
     io: Io,
-    player_lookup: *PlayerLookup,
-) !usize {
+    signal_engine: *signals.SignalEngine,
+    win: *dvui.Window,
+) !void {
+    // make sure to tell dvui to process next frame when finished:
+    defer dvui.refresh(win, @src(), null);
+
     var query_buf: [1024]u8 = undefined;
     var query_writer = Io.Writer.fixed(&query_buf);
     try query_writer.writeAll(
@@ -160,6 +167,24 @@ pub fn importTournament(
         .{ result.status, response.len, duration.toSeconds() },
     );
 
+    const body = try gpa.alloc(u8, response.len);
+    @memcpy(body, response);
+
+    try signal_engine.queue.putOne(io, .{
+        .startgg_response = .{
+            .status = result.status,
+            .body = body,
+        },
+    });
+}
+
+/// Executed in main thread
+pub fn handle_response(
+    gpa: std.mem.Allocator,
+    io: Io,
+    player_lookup: *PlayerLookup,
+    response: []const u8,
+) !usize {
     var parsed = std.json.parseFromSlice(
         ResponseBody,
         gpa,
@@ -201,6 +226,8 @@ pub fn importTournament(
         player_bio.normalized_name = player_bio.name.normalized();
         try player_lookup.players.append(gpa, player_bio);
     }
+
+    player_lookup.saveToDisk(io) catch unreachable;
 
     return player_lookup.players.items.len;
 }

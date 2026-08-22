@@ -7,6 +7,7 @@ const widgets = @import("./widgets.zig");
 const WebServer = @import("./WebServer.zig");
 const PlayerLookup = @import("./PlayerLookup.zig");
 const Startgg = @import("./Startgg.zig");
+const signals = @import("./signals.zig");
 
 const LABEL_WIDTH = 60;
 const DEFAULT_FONT_SIZE = 10;
@@ -67,6 +68,10 @@ var web_server: *WebServer = undefined;
 var player_lookup: PlayerLookup = undefined;
 var startgg: Startgg = undefined;
 
+var signal_engine: *signals.SignalEngine = undefined;
+var disable_gui = false;
+var background_job: ?signals.BackgroundJob = null;
+
 var active_tab: Tab = .Main;
 
 pub const Tab = enum { Main, @"start.gg" };
@@ -93,6 +98,8 @@ pub fn appInit(win: *dvui.Window) !void {
 
     // Load start.gg tab inputs if file exists
     startgg = .loadFile(io);
+
+    signal_engine = try .init(gpa);
 
     // Choose dark/light theme based on system preferences
     theme = switch (win.backend.preferredColorScheme() orelse .light) {
@@ -141,10 +148,51 @@ pub fn appDeinit(win: *dvui.Window) void {
     state.saveFile(io, STATE_FILE) catch unreachable;
     applied_state.saveFile(io, APPLIED_STATE_FILE) catch unreachable;
     startgg.writeFile(io) catch unreachable;
+    signal_engine.deinit(gpa);
 }
 
 // Run each frame to do normal UI
 pub fn appFrame() !dvui.App.Result {
+    const io = threaded_io.io();
+
+    // For now, to simplify things, any in-flight background job will disable
+    // the whole GUI.
+    // TODO: actually take this into account in all widgets - only the start.gg
+    // tab does this at the moment.
+    disable_gui = background_job != null;
+
+    // Process Signals
+    var signals_buf: [1]signals.Signal = undefined;
+    const n = try signal_engine.queue.get(io, &signals_buf, 0);
+    for (signals_buf[0..n], 0..) |signal, i| {
+        switch (signal) {
+            .startgg_response => |resp| {
+                defer background_job = null;
+                defer resp.deinit(gpa);
+
+                if (resp.status != .ok) {
+                    dvui.toast(
+                        @src(),
+                        .{ .id_extra = i, .message = "Unexpected error" },
+                    );
+                }
+
+                const num_players = try Startgg.handle_response(gpa, io, &player_lookup, resp.body);
+
+                var toast_buf: [64]u8 = undefined;
+                dvui.toast(
+                    @src(),
+                    .{
+                        .message = std.fmt.bufPrint(
+                            &toast_buf,
+                            "{d} players imported.",
+                            .{num_players},
+                        ) catch unreachable,
+                    },
+                );
+            },
+        }
+    }
 
     // Handle keyboard shortcuts
     const evts = dvui.events();
@@ -173,13 +221,13 @@ pub fn appFrame() !dvui.App.Result {
         var scroll = dvui.scrollArea(@src(), .{}, .{ .expand = .both, .style = .window });
         defer scroll.deinit();
 
-        if (content()) |res| return res;
+        if (try content()) |res| return res;
     }
 
     return .ok;
 }
 
-pub fn content() ?dvui.App.Result {
+pub fn content() !?dvui.App.Result {
     var tbox = dvui.box(
         @src(),
         .{ .dir = .vertical },
@@ -229,7 +277,7 @@ pub fn content() ?dvui.App.Result {
                     .border = if (active) .{ .x = 1, .y = 1, .w = 1 } else .all(0),
                     .color_border = null,
                 },
-            )) {
+            ) and !disable_gui) {
                 active_tab = tab;
             }
         }
@@ -275,6 +323,7 @@ pub fn content() ?dvui.App.Result {
                         applied_state.title.slice(),
                         .{},
                         .{ .expand = .horizontal },
+                        disable_gui,
                     );
                     title_entry.deinit();
                 }
@@ -304,6 +353,7 @@ pub fn content() ?dvui.App.Result {
                         applied_state.subtitle.slice(),
                         .{ .text = .{ .buffer = &state.subtitle.buf } },
                         .{ .expand = .horizontal },
+                        disable_gui,
                     );
                     subtitle_entry.deinit();
                 }
@@ -323,20 +373,20 @@ pub fn content() ?dvui.App.Result {
                     );
                     defer buttons_hbox.deinit();
 
-                    if (widgets.button(@src(), "Apply", .{})) {
+                    if (widgets.button(@src(), "Apply", .{}, disable_gui)) {
                         apply();
                     }
 
-                    if (widgets.button(@src(), "Discard", .{})) {
+                    if (widgets.button(@src(), "Discard", .{}, disable_gui)) {
                         state = applied_state;
                     }
 
-                    if (widgets.button(@src(), "Reset scores", .{})) {
+                    if (widgets.button(@src(), "Reset scores", .{}, disable_gui)) {
                         state.player1.score = 0;
                         state.player2.score = 0;
                     }
 
-                    if (widgets.button(@src(), "Swap players", .{})) {
+                    if (widgets.button(@src(), "Swap players", .{}, disable_gui)) {
                         const tmp = state.player1;
                         state.player1 = state.player2;
                         state.player2 = tmp;
@@ -397,6 +447,7 @@ pub fn content() ?dvui.App.Result {
                         startgg.tournament_slug.slice(),
                         .{},
                         .{ .expand = .horizontal },
+                        disable_gui,
                     );
                     tournament_slug_entry.deinit();
                 }
@@ -426,6 +477,7 @@ pub fn content() ?dvui.App.Result {
                         startgg.token.slice(),
                         .{ .password_char = "*" },
                         .{ .expand = .horizontal },
+                        disable_gui,
                     );
                     token_entry.deinit();
                 }
@@ -448,40 +500,23 @@ pub fn content() ?dvui.App.Result {
                         },
                     );
 
-                    if (widgets.button(@src(), "Import", .{})) player_import: {
-                        // TODO don't freeze the UI during http request
-                        const num_players = startgg.importTournament(
-                            gpa,
-                            threaded_io.io(),
-                            &player_lookup,
-                        ) catch |err| {
-                            var toast_buf: [1024]u8 = undefined;
-                            dvui.toast(
-                                @src(),
-                                .{
-                                    .message = std.fmt.bufPrint(
-                                        &toast_buf,
-                                        "start.gg import error: {any}",
-                                        .{err},
-                                    ) catch unreachable,
-                                },
-                            );
-                            break :player_import;
-                        };
-
-                        player_lookup.saveToDisk(threaded_io.io()) catch unreachable;
-
-                        var toast_buf: [64]u8 = undefined;
-                        dvui.toast(
-                            @src(),
+                    if (widgets.button(@src(), "Import", .{}, disable_gui)) {
+                        background_job = .startgg_request;
+                        var thread = try std.Thread.spawn(
+                            .{},
+                            Startgg.send_request,
                             .{
-                                .message = std.fmt.bufPrint(
-                                    &toast_buf,
-                                    "{d} players imported.",
-                                    .{num_players},
-                                ) catch unreachable,
+                                &startgg,
+                                gpa,
+                                threaded_io.io(),
+                                signal_engine,
+                                dvui.currentWindow(),
                             },
                         );
+                        thread.detach();
+                    }
+                    if (background_job == .startgg_request) {
+                        dvui.label(@src(), "importing...", .{}, .{ .gravity_y = 0.5 });
                     }
                 }
             },
@@ -586,6 +621,7 @@ fn playerInputs(
                 applied_player.country.slice(),
                 .{ .placeholder = "vn" },
                 .{ .max_size_content = .width(30), .id_extra = id },
+                disable_gui,
             );
             country_input.deinit();
 
@@ -620,6 +656,7 @@ fn playerInputs(
                 applied_player.team.slice(),
                 .{},
                 .{ .expand = .horizontal, .id_extra = id },
+                disable_gui,
             );
             team_input.deinit();
         }
@@ -633,6 +670,7 @@ fn playerInputs(
             .padding = .all(15),
             .id_extra = id,
         },
+        disable_gui,
     )) {
         player.score += 1;
     }
