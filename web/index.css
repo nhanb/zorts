@@ -104,6 +104,21 @@ body {
   left: 360px;
 }
 
+/* Slanted sides */
+#p1name-container,
+#p2name-container {
+  width: 370px;
+  aspect-ratio: 1;
+  height: 38px;
+}
+#p1name-container {
+  clip-path: polygon(0% 0%, 93% 0%, 100% 100%, 0% 100%);
+}
+#p2name-container {
+  clip-path: polygon(7% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+/* End slanted sides */
+
 #p2name-container {
   right: 360px;
   text-align: right;
