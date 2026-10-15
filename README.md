@@ -41,7 +41,8 @@ You can download the ready-to-use program from either of these (choose the
 latest release then download **zorts-windows.zip**):
 
 - [Download from GitHub](https://github.com/nhanb/zorts/releases/latest)
-- [Download from GitLab](https://gitlab.com/nhanb/zorts/-/releases)
+- ~~[Download from GitLab](https://gitlab.com/nhanb/zorts/-/releases)~~
+  (GitLab CI builds are currently broken. To be fixed.)
 
 ## How to use
 
@@ -64,12 +65,7 @@ There are multiple mirrors to pull from. Pick your poison:
 - https://gitlab.com/nhanb/zorts
 - https://codeberg.org/nhanb/zorts
 
-Targets zig 0.16. See Makefile for useful commands.
-
-Backlog:
-
-- [x] start.gg tournament player import
-- [ ] build in ReleaseSafe mode instead of Debug once 0.17 drops ([context][5])
+Targets zig 0.17. See Makefile for useful commands.
 
 ## License
 
