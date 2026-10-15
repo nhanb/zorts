@@ -41,8 +41,7 @@ You can download the ready-to-use program from either of these (choose the
 latest release then download **zorts-windows.zip**):
 
 - [Download from GitHub](https://github.com/nhanb/zorts/releases/latest)
-- ~~[Download from GitLab](https://gitlab.com/nhanb/zorts/-/releases)~~
-  (GitLab CI builds are currently broken. To be fixed.)
+- [Download from GitLab](https://gitlab.com/nhanb/zorts/-/releases)
 
 ## How to use
 

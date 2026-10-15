@@ -5,7 +5,9 @@ stages:
 default:
   image: "archlinux:latest"
   before_script:
-    - pacman -Syu --noconfirm make zig zip
+    - pacman -Syu --noconfirm make zip tar curl python3 minisign
+    - ./scripts/install-zig.py 0.17.0
+    - export PATH="$PWD/zig-bin:$PATH"
 
 build-linux-job:
   stage: build
