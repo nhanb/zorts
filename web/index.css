@@ -16,8 +16,8 @@ body {
 
 #p1score,
 #p2score,
-#p1name,
-#p2name,
+#p1name-container,
+#p2name-container,
 #p1country,
 #p2country,
 #p1team,
@@ -92,18 +92,27 @@ body {
   right: 224px;
 }
 
-#p1name,
-#p2name {
+#p1name-container,
+#p2name-container {
   top: 8px;
   font-size: 32px;
+  width: 350px;
+  overflow-x: hidden;
 }
 
-#p1name {
+#p1name-container {
   left: 360px;
 }
 
-#p2name {
+#p2name-container {
   right: 360px;
+  text-align: right;
+}
+
+#p1name,
+#p2name {
+  overflow-x: hidden;
+  white-space: nowrap;
 }
 
 #p1team {
@@ -124,4 +133,24 @@ body {
   right: 0;
   margin-left: auto;
   margin-right: auto;
+}
+
+.marquee-container {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.marquee-text.scrolling {
+  display: inline-block;
+  padding-left: 100%;
+  animation: scroll 5s linear infinite;
+}
+@keyframes scroll {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(-100%, 0);
+  }
 }

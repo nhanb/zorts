@@ -25,18 +25,18 @@ pub fn loadFile(gpa: std.mem.Allocator, io: Io, path: []const u8) !State {
             log.info("{s} file not found. Starting with empty state.", .{path});
             return .{
                 .title = .init("Saigon Cup 2026"),
-                .subtitle = .init("FT10"),
+                .subtitle = .init("FT2"),
                 .player1 = .{
-                    .team = .init("Team 1"),
-                    .country = .init("vn"),
-                    .name = .init("Nguyễn-san"),
-                    .score = 2,
+                    .team = .init(""),
+                    .country = .init(""),
+                    .name = .init(""),
+                    .score = 0,
                 },
                 .player2 = .{
                     .team = .init("Team 2"),
-                    .country = .init("jp"),
-                    .name = .init("Shirayukisama"),
-                    .score = 1,
+                    .country = .init(""),
+                    .name = .init(""),
+                    .score = 0,
                 },
             };
         },

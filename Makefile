@@ -33,7 +33,7 @@ clean:
 	rm -f state.json state-applied.json
 
 run:
-	zig build run $(UNIX_OPTS) -fincremental
+	zig build run $(UNIX_OPTS)
 
 watch:
 	find . -name '*.zig' | entr -rc make run

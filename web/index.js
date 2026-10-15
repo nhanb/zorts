@@ -52,7 +52,16 @@ const drawDiffToDom = (diff) => {
       };
     }
 
-    fadeUpdate(element, newValue, updateFunc);
+    fadeUpdate(element, newValue, () => {
+      updateFunc();
+      if (element.classList.contains("marquee-text")) {
+        if (element.scrollWidth > element.clientWidth) {
+          element.classList.add("scrolling");
+        } else {
+          element.classList.remove("scrolling");
+        }
+      }
+    });
   });
 };
 
