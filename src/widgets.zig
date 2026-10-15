@@ -18,12 +18,12 @@ pub fn button(src: std.builtin.SourceLocation, label_str: []const u8, opts: Opti
 
     const theme = dvui.themeGet();
 
-    options.color_text = theme.fill_press;
-    options.color_text_press = theme.fill_press;
-    options.color_fill_hover = theme.control.fill;
-    options.color_fill_press = theme.control.fill;
+    options.color_text = .{ .color = theme.fill_press.? };
+    options.color_text_press = .{ .color = theme.fill_press.? };
+    options.color_fill_hover = .{ .color = theme.control.fill.? };
+    options.color_fill_press = .{ .color = theme.control.fill.? };
     // TODO dark mode color too
-    options.color_border = .{ .a = 0x00 };
+    options.color_border = .{ .color = .{ .a = 0x00 } };
     _ = dvui.button(src, label_str, .{ .draw_focus = false }, options);
     dvui.cursorSet(.arrow);
     return false;
@@ -44,11 +44,11 @@ pub fn textEntry(
 
     var opts = options;
     if (!std.mem.eql(u8, string_val.slice(), applied_text)) {
-        opts.color_fill = theme.app1.fill;
+        opts.color_fill = .{ .color = theme.app1.fill.? };
     }
 
     if (disabled) {
-        opts.color_fill = theme.color(.control, .fill);
+        opts.color_fill = .{ .color = theme.color(.control, .fill) };
     }
 
     var ret = dvui.widgetAlloc(TextEntryWidget);
@@ -77,7 +77,7 @@ pub fn textEntryNumber(
             .max_size_content = .width(30),
             .id_extra = id_extra,
             .color_fill = if (number.* != applied_number)
-                dvui.themeGet().app1.fill
+                .{ .color = dvui.themeGet().app1.fill.? }
             else
                 null,
         },

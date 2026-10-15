@@ -3,7 +3,8 @@
 # https://codeberg.org/ziglang/translate-c/issues/327
 # ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
 ZIG_BUILD := zig build -Doptimize=Debug -Dcpu=x86_64_v3
-UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
+#UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
+UNIX_OPTS := -fsys=sdl3 -fsys=accesskit
 
 DIST_WIN_DIR := dist/zorts-win64
 DIST_LINUX_DIR := dist/zorts-linux64
@@ -35,7 +36,7 @@ clean:
 	rm -f state.json state-applied.json
 
 run:
-	zig build run $(UNIX_OPTS)
+	zig build run $(UNIX_OPTS) -fincremental
 
 watch:
 	find . -name '*.zig' | entr -rc make run

@@ -270,8 +270,8 @@ pub fn content() !?dvui.App.Result {
                 .{
                     .font = .theme(.body),
                     .corners = .default,
-                    .color_fill_hover = if (active) theme.color(.window, .fill) else null,
-                    .color_fill_press = if (active) theme.color(.window, .fill) else null,
+                    .color_fill_hover = if (active) .{ .color = theme.color(.window, .fill) } else null,
+                    .color_fill_press = if (active) .{ .color = theme.color(.window, .fill) } else null,
                     .margin = .{ .h = if (active) 0 else 1 },
                     .padding = if (active) active_padding else padding,
                     .border = if (active) .{ .x = 1, .y = 1, .w = 1 } else .all(0),
@@ -531,7 +531,7 @@ fn playerInputs(
     applied_player: *State.PlayerState,
     player_num: enum(u8) { one, two },
 ) void {
-    const id = @intFromEnum(player_num);
+    const id = @backingInt(player_num);
 
     var p1_hbox = dvui.box(
         @src(),
@@ -559,7 +559,7 @@ fn playerInputs(
             dvui.labelEx(
                 @src(),
                 "Player {d}",
-                .{@intFromEnum(player_num) + 1},
+                .{@backingInt(player_num) + 1},
                 .{ .align_x = 1 },
                 .{
                     .gravity_y = 0.5,
@@ -578,7 +578,7 @@ fn playerInputs(
                 var name_entry: dvui.TextEntryWidget = undefined;
                 var opts: dvui.Options = .{ .expand = .horizontal, .id_extra = id };
                 if (!std.mem.eql(u8, player.name.slice(), applied_player.name.slice())) {
-                    opts.color_fill = dvui.themeGet().app1.fill;
+                    opts.color_fill = .{ .color = dvui.themeGet().app1.fill.? };
                 }
                 name_entry.init(
                     @src(),
@@ -641,7 +641,7 @@ fn playerInputs(
             dvui.labelEx(
                 @src(),
                 "Team {d}",
-                .{@intFromEnum(player_num) + 1},
+                .{@backingInt(player_num) + 1},
                 .{ .align_x = 1 },
                 .{
                     .gravity_y = 0.5,
