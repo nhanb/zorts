@@ -23,6 +23,9 @@ const getDiff = (newState, oldState) => {
 // Thanks internets:
 // https://dev.to/jorik/country-code-to-flag-emoji-a21
 function getFlagEmoji(countryCode) {
+  if (countryCode === "") {
+    return "🇺🇳";
+  }
   const codePoints = countryCode
     .toUpperCase()
     .split("")

@@ -102,6 +102,12 @@ body {
 
 #p1name-container {
   left: 360px;
+  text-align: left;
+}
+
+#p2name-container {
+  right: 360px;
+  text-align: right;
 }
 
 /* Slanted sides */
@@ -118,11 +124,6 @@ body {
   clip-path: polygon(7% 0%, 100% 0%, 100% 100%, 0% 100%);
 }
 /* End slanted sides */
-
-#p2name-container {
-  right: 360px;
-  text-align: right;
-}
 
 #p1name,
 #p2name {

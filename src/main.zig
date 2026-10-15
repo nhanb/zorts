@@ -619,7 +619,7 @@ fn playerInputs(
                 @src(),
                 &player.country,
                 applied_player.country.slice(),
-                .{ .placeholder = "vn" },
+                .{},
                 .{ .max_size_content = .width(30), .id_extra = id },
                 disable_gui,
             );
