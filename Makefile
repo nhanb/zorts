@@ -1,8 +1,5 @@
-# Zig windows build is broken with ReleaseSafe. Seems like a fix is already
-# in master but not in 0.16. Let's use Debug builds until 0.17 drops.
-# https://codeberg.org/ziglang/translate-c/issues/327
-# ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
-ZIG_BUILD := zig build -Doptimize=Debug -Dcpu=x86_64_v3
+ZIG_BUILD := zig build -Doptimize=ReleaseSafe -Dcpu=x86_64_v3
+# -fsys=freetype is broken again on linux for some reason
 #UNIX_OPTS := -fsys=sdl3 -fsys=freetype -fsys=accesskit
 UNIX_OPTS := -fsys=sdl3 -fsys=accesskit
 
