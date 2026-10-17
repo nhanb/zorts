@@ -1,4 +1,4 @@
-const fadeUpdate = (element, newValue, updateFunc) => {
+const fadeUpdate = (element, updateFunc) => {
   element.classList.add("fade");
   updateFunc();
   // Assuming whole animation duration == 1s
@@ -41,7 +41,6 @@ const drawDiffToDom = (diff) => {
     } // skip fields not used in DOM
 
     const newValue = diff[key]["new"];
-    const oldValue = diff[key]["old"];
 
     // Most elements are straightforward to overwrite
     let updateFunc = () => {
@@ -55,7 +54,7 @@ const drawDiffToDom = (diff) => {
       };
     }
 
-    fadeUpdate(element, newValue, () => {
+    fadeUpdate(element, () => {
       updateFunc();
       if (element.classList.contains("marquee-text")) {
         if (element.scrollWidth > element.clientWidth) {
@@ -104,9 +103,27 @@ const pollState = () => {
     .then(applyNewState);
 };
 
+const rotateLogos = () => {
+  if (LOGOS.length === 0) return;
+
+  const logoElem = document.querySelector("#logo");
+  let logoIndex = 0;
+
+  logoElem.setAttribute("src", LOGOS[logoIndex]);
+
+  setInterval(() => {
+    logoIndex++;
+    if (logoIndex >= LOGOS.length) logoIndex = 0;
+    fadeUpdate(logoElem, () => {
+      logoElem.setAttribute("src", LOGOS[logoIndex]);
+    });
+  }, 5000);
+};
+
 /*
  * ACTUAL CODE FLOW STARTS HERE
  */
 window.STATE = {}; // state singleton, globally accessible
 pollState(); // immediately populate data to avoid empty values on page load
 setInterval(pollState, 1500);
+rotateLogos();

@@ -53,6 +53,9 @@ Just unzip then:
 - If you want to manually edit the list of player name suggestions, just edit
   **players.csv** with any text editor (notepad++) or spreadsheet editor (excel
   or [libreoffice calc][3])
+- To swap out the sponsor logos in the bottom center, put your desired logo
+  image files in **web/assets/logos**. Each photo will be featured for 5
+  seconds then fade-transitioned to the next.
 - If you want to customize the look, open up the **web** folder and go wild.
   You only need basic HTML/CSS/JS knowledge to work on it. No fancy frameworks.
 

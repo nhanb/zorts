@@ -10,6 +10,8 @@ const Self = @This();
 
 pub const PORT = 1337;
 pub const WEB_DIR = "web";
+pub const LOGOS_PATH = "/assets/logos";
+pub const LOGOS_DIR = WEB_DIR ++ LOGOS_PATH;
 
 gpa: std.mem.Allocator,
 io: Io,
@@ -161,5 +163,29 @@ fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
         else => return err,
     };
 
-    try request.respond(blob, .{});
+    // Special case /index.js: give it the list of available logo files
+    if (mem.eql(u8, path, "index.js")) {
+        var awriter = Io.Writer.Allocating.init(arena);
+        const writer = &awriter.writer;
+
+        try writer.print("const LOGOS = [\n", .{});
+
+        var logos_dir = try Io.Dir.cwd().openDir(io, LOGOS_DIR, .{ .iterate = true });
+        defer logos_dir.close(io);
+
+        var logos_iter = logos_dir.iterate();
+        while (try logos_iter.next(io)) |child| {
+            try writer.print("  \"{s}/{s}\",\n", .{ LOGOS_PATH, child.name });
+        }
+
+        try writer.print("];\n\n", .{});
+
+        try writer.writeAll(blob);
+        try writer.flush();
+
+        const final_blob = awriter.written();
+        try request.respond(final_blob, .{});
+    } else {
+        try request.respond(blob, .{});
+    }
 }
