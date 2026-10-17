@@ -213,7 +213,7 @@ pub fn appFrame() !dvui.App.Result {
     {
         var scaler = dvui.scale(
             @src(),
-            .{ .scale = &dvui.currentWindow().content_scale, .pinch_zoom = .global },
+            .{ .scale = &dvui.currentWindow().content_scale },
             .{ .rect = .cast(dvui.windowRect()) },
         );
         scaler.deinit();
