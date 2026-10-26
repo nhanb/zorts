@@ -81,12 +81,16 @@ const applyNewState = (newState) => {
 const fetchHeaders = new Headers();
 fetchHeaders.append("pragma", "no-cache");
 fetchHeaders.append("cache-control", "no-cache");
-const fetchInit = {
-  method: "GET",
-  headers: fetchHeaders,
-};
-const pollState = () => {
-  fetch("state.json", fetchInit)
+
+// Long-poll the state
+const pollState = (pollId) => {
+  fetch("state.json", {
+    method: "GET",
+    headers: {
+      ...fetchHeaders,
+      [POLL_ID_HEADER]: pollId,
+    },
+  })
     .then((response) => response.json())
     .then((resp) => ({
       title: resp.title,
@@ -100,7 +104,10 @@ const pollState = () => {
       p2score: resp.player2.score,
       p2country: resp.player2.country,
     }))
-    .then(applyNewState);
+    .then(applyNewState)
+    .then(() => {
+      pollState(pollId + 1);
+    });
 };
 
 const rotateLogos = () => {
@@ -124,6 +131,5 @@ const rotateLogos = () => {
  * ACTUAL CODE FLOW STARTS HERE
  */
 window.STATE = {}; // state singleton, globally accessible
-pollState(); // immediately populate data to avoid empty values on page load
-setInterval(pollState, 1500);
+pollState(0);
 rotateLogos();

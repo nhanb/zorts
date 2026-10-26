@@ -12,6 +12,7 @@ pub const PORT = 1337;
 pub const WEB_DIR = "web";
 pub const LOGOS_PATH = "/assets/logos";
 pub const LOGOS_DIR = WEB_DIR ++ LOGOS_PATH;
+pub const POLL_ID_HEADER = "X-Poll-Id";
 
 gpa: std.mem.Allocator,
 io: Io,
@@ -20,6 +21,7 @@ state_mutex: *Io.Mutex,
 shutting_down: bool,
 tcp_server: net.Server,
 server_thread: std.Thread,
+state_poll_id: u64 = 1,
 
 pub fn init(
     gpa: std.mem.Allocator,
@@ -108,6 +110,9 @@ fn handleRequest(self: *Self, request: *std.http.Server.Request) !void {
         var buf: [4096]u8 = undefined;
         var body: []u8 = "";
 
+        // TODO delete me
+        try io.sleep(.fromSeconds(2), .real);
+
         {
             try self.state_mutex.lock(io);
             defer self.state_mutex.unlock(io);
@@ -168,17 +173,28 @@ fn serveFile(self: *Self, request: *std.http.Server.Request) !void {
         var awriter = Io.Writer.Allocating.init(arena);
         const writer = &awriter.writer;
 
-        try writer.print("const LOGOS = [\n", .{});
+        // Write LOGOS const
+        {
+            try writer.print("const LOGOS = [\n", .{});
 
-        var logos_dir = try Io.Dir.cwd().openDir(io, LOGOS_DIR, .{ .iterate = true });
-        defer logos_dir.close(io);
+            var logos_dir = try Io.Dir.cwd().openDir(io, LOGOS_DIR, .{ .iterate = true });
+            defer logos_dir.close(io);
 
-        var logos_iter = logos_dir.iterate();
-        while (try logos_iter.next(io)) |child| {
-            try writer.print("  \"{s}/{s}\",\n", .{ LOGOS_PATH, child.name });
+            var logos_iter = logos_dir.iterate();
+            while (try logos_iter.next(io)) |child| {
+                try writer.print("  \"{s}/{s}\",\n", .{ LOGOS_PATH, child.name });
+            }
+
+            try writer.print("];\n", .{});
         }
 
-        try writer.print("];\n\n", .{});
+        // Write POLL_ID_HEADER const
+        {
+            try writer.print(
+                "const POLL_ID_HEADER = '{s}';\n\n",
+                .{POLL_ID_HEADER},
+            );
+        }
 
         try writer.writeAll(blob);
         try writer.flush();
