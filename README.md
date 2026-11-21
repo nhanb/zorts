@@ -59,6 +59,11 @@ Just unzip then:
 - If you want to customize the look, open up the **web** folder and go wild.
   You only need basic HTML/CSS/JS knowledge to work on it. No fancy frameworks.
 
+### Remote control
+
+Not exactly a ZORTS feature, but it's possible to control ZORTS on a different
+machine from the one running OBS using [tailcat][6]. See [my blog post][7].
+
 ## Development
 
 There are multiple mirrors to pull from. Pick your poison:
@@ -126,3 +131,5 @@ The following is its original license:
 [3]: https://www.libreoffice.org/discover/calc/
 [4]: https://github.com/nhanb/dvui/blob/07baf098603b42cad44c2df30c58b01fc0c399d0/src/backends/dx11.zig#L1722
 [5]: https://codeberg.org/ziglang/translate-c/issues/327
+[6]: https://github.com/tailscale/tailcat
+[7]: https://hi.imnhan.com/remote-zorts/
